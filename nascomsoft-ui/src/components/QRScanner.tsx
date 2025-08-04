@@ -64,8 +64,8 @@ export function QRScanner() {
           const currentLat = position.coords.latitude;
           const currentLng = position.coords.longitude;
 
-          // Store location in state (but do NOT mark attendance here)
           setLocation({ lat: currentLat, lng: currentLng });
+          console.log("✅ Location acquired:", currentLat, currentLng);
         },
         (error) => {
           console.error("Location error:", error);
@@ -75,17 +75,18 @@ export function QRScanner() {
     }
   }, [user?.id]);
 
-  // useEffect for setting up the scanner
-
   // Handle scan initiation
   const handleScan = () => {
+    if (attendanceStatus === "checked-out") {
+      setMessage("✅ You’ve already checked in and out for today");
+      return;
+    }
+
     if (attendanceStatus === "checked-in") {
-      // Show confirmation modal if already checked in
       setShowCheckoutDialog(true);
       return;
     }
 
-    // Otherwise begin scan immediately
     startScanner();
   };
 
@@ -169,14 +170,18 @@ export function QRScanner() {
     scanner: Html5Qrcode
   ) => {
     try {
-      const res = await fetch("/api/attendance/mark", {
+      console.log("📤 Raw payload sent to backend:", {
+        location: location ? { lat: location.lat, lng: location.lng } : null,
+        qrCodeContent: decodedText,
+      });
+      const res = await fetch("http://localhost:5000/api/attendance/mark", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("nascomsoft-token")}`,
         },
         body: JSON.stringify({
-          location,
+          location: location ? { lat: location.lat, lng: location.lng } : null,
           qrCodeContent: decodedText,
         }),
       });
@@ -278,6 +283,53 @@ export function QRScanner() {
     );
     return distance <= LOCATION_RADIUS;
   };
+
+  useEffect(() => {
+  const fetchTodayRecord = async () => {
+    try {
+      const response = await fetch(
+        `/api/attendance/today?userId=${user?.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("nascomsoft-token")}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      console.log("📆 Today Record Response:", data);
+
+      if (data.status === "notCheckedIn") {
+        setAttendanceStatus("none");
+        setTodayRecord(null);
+        setMessage("");
+      } else if (data.status === "checkedOut") {
+        setAttendanceStatus("checked-out");
+        setTodayRecord(data);
+        setMessage("✅ You’ve already checked in and out for today.");
+      } else if (data.status === "checkedIn") {
+        setAttendanceStatus("checked-in");
+        setTodayRecord(data);
+        setMessage("🕒 You’ve checked in. Ready to check out.");
+      } else {
+        setAttendanceStatus("none");
+        setTodayRecord(null);
+        setMessage("");
+      }
+    } catch (error) {
+      console.error("Failed to fetch today's attendance:", error);
+    }
+  };
+
+  if (user?.id) {
+    fetchTodayRecord();
+  }
+  console.log("👤 Current user ID:", user?.id);
+}, [user?.id]);
+
+
+  console.log("🧾 Final Message:", message);
+console.log("🎯 Final Status:", attendanceStatus);
 
   return (
     <div className="min-h-screen bg-background-secondary">
@@ -433,7 +485,7 @@ export function QRScanner() {
 
             {/* Message Area */}
             <div className="min-h-[48px] flex items-center justify-center bg-background-muted rounded-lg px-4 py-3 border border-card-border">
-              {message ? (
+              {message && message.trim() !== "" ? (
                 <div
                   className={`text-sm font-medium text-center ${
                     message.includes("✅")

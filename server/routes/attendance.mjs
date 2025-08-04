@@ -7,12 +7,22 @@ import User from "../models/User.mjs";
 const router = express.Router();
 
 // POST /api/attendance/mark
-// mark.js or attendance.mjs (depending on your setup)
 router.post("/mark", authUser, async (req, res) => {
   const userId = req.user?.userId;
   const { location, qrCodeContent } = req.body;
+  console.log(location, qrCodeContent);
 
-  if (!userId || !location?.lat || !location?.lng || !qrCodeContent) {
+  console.log("✅ userId:", userId);
+  console.log("✅ location:", location);
+  console.log("✅ qrCodeContent:", qrCodeContent);
+
+  if (
+    !userId ||
+    !location ||
+    location.lat == null ||
+    location.lng == null ||
+    !qrCodeContent
+  ) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
@@ -20,8 +30,8 @@ router.post("/mark", authUser, async (req, res) => {
     return res.status(400).json({ error: "Invalid QR Code" });
   }
 
-  const HUB_LAT = 6.5244;
-  const HUB_LNG = 3.3792;
+  const HUB_LAT = 6.5243793;
+  const HUB_LNG = 3.3792057;
 
   const distance = getDistanceFromLatLonInMeters(
     location.lat,
@@ -30,8 +40,10 @@ router.post("/mark", authUser, async (req, res) => {
     HUB_LNG
   );
 
-  if (distance > 50) {
-    return res.status(400).json({ error: "You are too far from the hub location" });
+  if (distance > 100) {
+    return res
+      .status(400)
+      .json({ error: "You are too far from the hub location" });
   }
 
   const now = new Date();
@@ -56,11 +68,14 @@ router.post("/mark", authUser, async (req, res) => {
       await attendance.save();
 
       return res.status(200).json({
-        message: `✅ Checked in successfully at ${now.toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })}`,
+        message: `✅ Checked in successfully at ${now.toLocaleTimeString(
+          "en-US",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }
+        )}`,
         userId,
         checkInTime: attendance.checkInTime,
         date: attendance.date,
@@ -144,13 +159,28 @@ router.get("/status", authUser, async (req, res) => {
   }
 });
 
-
 // GET /api/attendance/today
 router.get("/today", authUser, async (req, res) => {
   const today = new Date().toISOString().split("T")[0];
-  const userId = req.user.id;
+  const userId = req.user.userId;
 
-  const record = await Attendance.findOne({ userId, date: today });
+  console.log("🧠 Checking today's attendance for:", userId, today);
+
+  const startOfDay = new Date();
+startOfDay.setHours(0, 0, 0, 0);
+
+const endOfDay = new Date();
+endOfDay.setHours(23, 59, 59, 999);
+
+const record = await Attendance.findOne({
+  userId,
+  date: {
+    $gte: startOfDay,
+    $lte: endOfDay,
+  },
+});
+
+  console.log("📌 Found record:", record); // <-- this will help us
 
   if (!record) return res.json({ status: "notCheckedIn" });
 
