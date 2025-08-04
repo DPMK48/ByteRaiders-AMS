@@ -78,7 +78,7 @@ interface AttendanceRecord {
   date: string;
   checkIn?: Date;
   checkOut?: Date;
-  status: "present" | "partial" | "absent";
+  status: "present" | "absent";
 }
 // interface AttendanceDetails {
 //   id: string;
@@ -204,11 +204,13 @@ export function AdminDashboard() {
 }, []);
 
 
-  const todayCheckIns = attendanceRecords.filter((record) => {
-    const recordDate = new Date(record.date).toDateString();
-    const today = new Date().toDateString();
-    return recordDate === today && record.checkIn;
-  }).length;
+const today = new Date().toDateString();
+
+const todayCheckIns = attendanceOverview.filter((record) => {
+  const recordDate = new Date(record.date).toDateString();
+  return recordDate === today && record.checkIn;
+}).length;
+
 
   const addStaff = async () => {
     if (
@@ -996,8 +998,6 @@ export function AdminDashboard() {
                           variant={
                             record.status === "present"
                               ? "default"
-                              : record.status === "partial"
-                              ? "secondary"
                               : "destructive"
                           }
                         >

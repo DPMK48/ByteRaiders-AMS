@@ -195,6 +195,21 @@ const record = await Attendance.findOne({
   });
 });
 
+router.get("/today/all", authUser, async (req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0]; // 'YYYY-MM-DD'
+
+    const records = await Attendance.find({
+      date: today
+    }).populate("userId", "name email role");
+
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch today's attendance records" });
+  }
+});
+
+
 // Fetch attendance overview
 router.get("/overview", async (req, res) => {
   try {

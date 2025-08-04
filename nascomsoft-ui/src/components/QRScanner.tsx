@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useRef } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Alert, AlertDescription } from "./ui/alert";
+// import { Alert, AlertDescription } from "./ui/alert";
 import { Badge } from "./ui/badge";
 import {
   QrCode,
@@ -34,6 +34,8 @@ interface AttendanceRecord {
   checkOut?: Date;
   location: string;
   date: string;
+  checkInTime?: string;
+  checkOutTime?: string;
 }
 
 export function QRScanner() {
@@ -52,7 +54,7 @@ export function QRScanner() {
   const qrScannerRef = useRef<HTMLDivElement | null>(null);
 
   const HUB_LOCATION = { lat: 6.5243793, lng: 3.3792057 }; // Updated hub location
-  const LOCATION_RADIUS = 100; // meters
+  const LOCATION_RADIUS = 1000; // meters
 
   // 🔁 Fetch and store location ONCE
   useEffect(() => {
@@ -404,35 +406,33 @@ console.log("🎯 Final Status:", attendanceStatus);
               </Badge>
             </div>
 
-            {todayRecord?.checkIn && (
-              <div className="bg-background-muted rounded-lg p-4 space-y-2">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-foreground-muted">Check-in:</span>
-                  <span className="font-medium text-foreground">
-                    {new Date(todayRecord.checkIn).toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}
-                  </span>
-                </div>
-                {todayRecord.checkOut && (
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-foreground-muted">Check-out:</span>
-                    <span className="font-medium text-foreground">
-                      {new Date(todayRecord.checkOut).toLocaleTimeString(
-                        "en-US",
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
-                        }
-                      )}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+            {todayRecord?.checkInTime && (
+  <div className="bg-background-muted rounded-lg p-4 space-y-2">
+    <div className="flex justify-between items-center text-sm">
+      <span className="text-foreground-muted">Check-in:</span>
+      <span className="font-medium text-foreground">
+        {new Date(todayRecord.checkInTime).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        })}
+      </span>
+    </div>
+    {todayRecord.checkOutTime && (
+      <div className="flex justify-between items-center text-sm">
+        <span className="text-foreground-muted">Check-out:</span>
+        <span className="font-medium text-foreground">
+          {new Date(todayRecord.checkOutTime).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })}
+        </span>
+      </div>
+    )}
+  </div>
+)}
+
           </CardContent>
         </Card>
 
