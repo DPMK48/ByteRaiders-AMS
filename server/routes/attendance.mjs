@@ -30,8 +30,8 @@ router.post("/mark", authUser, async (req, res) => {
     return res.status(400).json({ error: "Invalid QR Code" });
   }
 
-  const HUB_LAT = 6.5243793;
-  const HUB_LNG = 3.3792057;
+  const HUB_LAT = 10.272637;
+  const HUB_LNG = 9.794106;
 
   const distance = getDistanceFromLatLonInMeters(
     location.lat,
