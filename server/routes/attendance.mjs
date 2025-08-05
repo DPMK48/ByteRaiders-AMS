@@ -167,18 +167,18 @@ router.get("/today", authUser, async (req, res) => {
   console.log("🧠 Checking today's attendance for:", userId, today);
 
   const startOfDay = new Date();
-startOfDay.setHours(0, 0, 0, 0);
+  startOfDay.setHours(0, 0, 0, 0);
 
-const endOfDay = new Date();
-endOfDay.setHours(23, 59, 59, 999);
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
 
-const record = await Attendance.findOne({
-  userId,
-  date: {
-    $gte: startOfDay,
-    $lte: endOfDay,
-  },
-});
+  const record = await Attendance.findOne({
+    userId,
+    date: {
+      $gte: startOfDay,
+      $lte: endOfDay,
+    },
+  });
 
   console.log("📌 Found record:", record); // <-- this will help us
 
@@ -195,20 +195,19 @@ const record = await Attendance.findOne({
   });
 });
 
-router.get("/today/all", authUser, async (req, res) => {
-  try {
-    const today = new Date().toISOString().split("T")[0]; // 'YYYY-MM-DD'
+// router.get("/today/all", authUser, async (req, res) => {
+//   try {
+//     const today = new Date().toISOString().split("T")[0]; // 'YYYY-MM-DD'
 
-    const records = await Attendance.find({
-      date: today
-    }).populate("userId", "name email role");
+//     const records = await Attendance.find({
+//       date: today
+//     }).populate("userId", "name email role");
 
-    res.json(records);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch today's attendance records" });
-  }
-});
-
+//     res.json(records);
+//   } catch (err) {
+//     res.status(500).json({ error: "Failed to fetch today's attendance records" });
+//   }
+// });
 
 // Fetch attendance overview
 router.get("/overview", async (req, res) => {

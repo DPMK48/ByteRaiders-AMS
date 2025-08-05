@@ -137,80 +137,78 @@ export function AdminDashboard() {
   });
 
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const token = localStorage.getItem("nascomsoft-token");
-      if (!token) throw new Error("No auth token found");
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("nascomsoft-token");
+        if (!token) throw new Error("No auth token found");
 
-      // Fetch all data concurrently
-      const [staffRes, studentsRes, overviewRes] = await Promise.all([
-        fetch("http://localhost:5000/api/auth/staff", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("http://localhost:5000/api/auth/student", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("http://localhost:5000/api/attendance/overview", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+        // Fetch all data concurrently
+        const [staffRes, studentsRes, overviewRes] = await Promise.all([
+          fetch("http://localhost:5000/api/auth/staff", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("http://localhost:5000/api/auth/student", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("http://localhost:5000/api/attendance/overview", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
-      // Ensure all responses are OK
-      if (![staffRes, studentsRes, overviewRes].every((res) => res.ok)) {
-        throw new Error("One or more requests failed");
+        // Ensure all responses are OK
+        if (![staffRes, studentsRes, overviewRes].every((res) => res.ok)) {
+          throw new Error("One or more requests failed");
+        }
+
+        // Parse JSON data
+        const [staffData, studentsData, overviewData] = await Promise.all([
+          staffRes.json(),
+          studentsRes.json(),
+          overviewRes.json(),
+        ]);
+
+        // Format data
+        const formattedStaff = Array.isArray(staffData)
+          ? staffData.map((s) => ({ ...s, id: s._id }))
+          : [];
+
+        const formattedStudents = Array.isArray(studentsData)
+          ? studentsData.map((s) => ({ ...s, id: s._id }))
+          : [];
+
+        const formattedOverview = Array.isArray(overviewData)
+          ? overviewData.map((record) => ({
+              id: record._id,
+              userId: record.userId,
+              userName: record.name, // backend key: name → userName
+              userRole: record.role, // backend key: role → userRole
+              email: record.email,
+              date: record.date,
+              checkIn: record.checkIn,
+              checkOut: record.checkOut,
+              status: record.status,
+            }))
+          : [];
+
+        // Set state
+        setStaff(formattedStaff);
+        setStudents(formattedStudents);
+        setAttendanceOverview(formattedOverview);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load staff, students, or overview");
       }
+    };
 
-      // Parse JSON data
-      const [staffData, studentsData, overviewData] = await Promise.all([
-        staffRes.json(),
-        studentsRes.json(),
-        overviewRes.json(),
-      ]);
+    fetchData();
+  }, []);
 
-      // Format data
-      const formattedStaff = Array.isArray(staffData)
-        ? staffData.map((s) => ({ ...s, id: s._id }))
-        : [];
-
-      const formattedStudents = Array.isArray(studentsData)
-        ? studentsData.map((s) => ({ ...s, id: s._id }))
-        : [];
-
-      const formattedOverview = Array.isArray(overviewData)
-        ? overviewData.map((record) => ({
-            id: record._id,
-            userId: record.userId,
-            userName: record.name,   // backend key: name → userName
-            userRole: record.role,   // backend key: role → userRole
-            email: record.email,
-            date: record.date,
-            checkIn: record.checkIn,
-            checkOut: record.checkOut,
-            status: record.status,
-          }))
-        : [];
-
-      // Set state
-      setStaff(formattedStaff);
-      setStudents(formattedStudents);
-      setAttendanceOverview(formattedOverview);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast.error("Failed to load staff, students, or overview");
-    }
-  };
-
-  fetchData();
-}, []);
-
-
-const today = new Date().toDateString();
-
-const todayCheckIns = attendanceOverview.filter((record) => {
-  const recordDate = new Date(record.date).toDateString();
-  return recordDate === today && record.checkIn;
-}).length;
-
+  const today = new Date().toDateString();
+  const todayCheckIns = attendanceOverview.filter((record) => {
+    const recordDate = new Date(record.date).toDateString();
+    return recordDate === today && record.checkIn;
+  }).length;
+  const totalRecords = attendanceOverview.length;
 
   const addStaff = async () => {
     if (
@@ -556,7 +554,7 @@ const todayCheckIns = attendanceOverview.filter((record) => {
                 {todayCheckIns}
               </div>
               <p className="text-xs text-foreground-muted mt-1">
-                Total attendance records
+                Total attendance records: {totalRecords}
               </p>
             </CardContent>
           </Card>

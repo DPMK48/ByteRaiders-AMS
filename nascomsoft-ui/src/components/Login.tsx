@@ -14,7 +14,7 @@ import { Loader2, Mail, Lock, LogOut } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { ThemeToggle } from "./ThemeToggle";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-import nascomsoftLogo from "../assets/nacomlogo.jpeg"; // adjust the path as needed
+import nascomsoftLogo from "../assets/a.png"; // adjust the path as needed
 
 interface LoginProps {
   onLoginSuccess: () => void;
@@ -77,7 +77,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
                 <ImageWithFallback
                   src={nascomsoftLogo}
                   alt="Nascomsoft Embedded Logo"
-                  className="h-16 w-auto"
+                  className="h-20 w-auto"
                 />
               </div>
 

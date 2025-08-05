@@ -53,8 +53,8 @@ export function QRScanner() {
   const [todayRecord, setTodayRecord] = useState<AttendanceRecord | null>(null);
   const qrScannerRef = useRef<HTMLDivElement | null>(null);
 
-  const HUB_LOCATION = { lat: 6.5243793, lng: 3.3792057 }; // Updated hub location
-  const LOCATION_RADIUS = 1000; // meters
+  const HUB_LOCATION = { lat:  6.5243793 , lng: 3.3792057 }; // Updated hub location
+  const LOCATION_RADIUS = 100; // meters
 
   // 🔁 Fetch and store location ONCE
   useEffect(() => {
