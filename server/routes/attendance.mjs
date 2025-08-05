@@ -30,8 +30,8 @@ router.post("/mark", authUser, async (req, res) => {
     return res.status(400).json({ error: "Invalid QR Code" });
   }
 
-  const HUB_LAT = 10.2726859;
-  const HUB_LNG = 9.7940298;
+  const HUB_LAT = 10.272637;
+  const HUB_LNG = 9.794106;
 
   const distance = getDistanceFromLatLonInMeters(
     location.lat,
@@ -39,8 +39,8 @@ router.post("/mark", authUser, async (req, res) => {
     HUB_LAT,
     HUB_LNG
   );
-console.log(distance)
-  if (distance > 100) {
+  if (distance > 500) {
+   
     return res
       .status(400)
       .json({ error: "You are too far from the hub location" });
