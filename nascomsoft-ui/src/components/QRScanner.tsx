@@ -120,33 +120,43 @@ export function QRScanner() {
       qrScannerRef.current.id ||= scannerId;
       scanner = new Html5Qrcode(scannerId);
 
-      scanner
-        .start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: 250 },
-          async (decodedText) => {
-            if (hasScanned) return;
-            hasScanned = true;
+      Html5Qrcode.getCameras()
+      .then(devices => {
+        if (devices && devices.length) {
+          //  try select back camera
+          const backCamera = devices.find(device => device.label.toLowerCase().includes("back"))
+          const cameraId = backCamera ? backCamera.id : devices[0].id
+          
+          scanner
+            .start(
+              cameraId,
+              { fps: 10, qrbox: 250 },
+              async (decodedText) => {
+                if (hasScanned) return;
+                hasScanned = true;
+    
+                if (decodedText !== "HUB-ATTENDANCE-2025") {
+                  setMessage("❌ Invalid QR code scanned");
+                  stopScanner(scanner);
+                  return;
+                }
+    
+                await scanAndSubmitAttendance(decodedText, scanner);
+              },
+              (errorMessage) => {
+                if (!errorMessage.includes("NotFoundException")) {
+                  console.warn("QR error:", errorMessage);
+                }
+              }
+            )
+            .then(() => setScannerRunning(true))
+            .catch((err) => {
+              console.error("QR scanner failed:", err);
+              setIsScanning(false);
+            });
+        }
+      })
 
-            if (decodedText !== "HUB-ATTENDANCE-2025") {
-              setMessage("❌ Invalid QR code scanned");
-              stopScanner(scanner);
-              return;
-            }
-
-            await scanAndSubmitAttendance(decodedText, scanner);
-          },
-          (errorMessage) => {
-            if (!errorMessage.includes("NotFoundException")) {
-              console.warn("QR error:", errorMessage);
-            }
-          }
-        )
-        .then(() => setScannerRunning(true))
-        .catch((err) => {
-          console.error("QR scanner failed:", err);
-          setIsScanning(false);
-        });
     }
 
     return () => {
