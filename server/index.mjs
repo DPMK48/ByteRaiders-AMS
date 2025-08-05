@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 5000;
 // 🔧 Middleware
 const allowedOrigins = [
   "http://localhost:5173",           // local dev
-  "https://ams-frontend-iota.vercel.app" // live frontend
+  "https://ams-frontend-iota.vercel.app"     // deployed frontend
 ];
 
 app.use(cors({
