@@ -39,7 +39,7 @@ router.post("/mark", authUser, async (req, res) => {
     HUB_LAT,
     HUB_LNG
   );
-
+console.log(distance)
   if (distance > 100) {
     return res
       .status(400)
