@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.mjs";
+import User from "./models/User.mjs";
 
 import authRoutes from "./routes/auth.mjs";
 import attendanceRoutes from "./routes/attendance.mjs";
@@ -26,21 +27,28 @@ connectDB()
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
-     //     User.create({
-  //       name: "Dorathy",
-  //       email: "dorathypaul@gmail.com",
-  //       password: "$2b$10$r/1eL5AdaKZ3L/mzNA62Nu412MoMo1N.Cgvo4p/opoHtEJM6.f/0S",
-  //       role: "admin",
-  //     }).then(() => {
-  //       console.log("✅ Default admin user created")
-  //     }).catch((err) => {
-  //       console.error("❌ Error creating default admin user:", err.message);
-  //     }
-  // );
+    User.findOne({ email: "dorathypaul@gmail.com" })
+      .then((existingAdmin) => {
+        if (!existingAdmin) {
+          return User.create({
+            name: "Dorathy",
+            email: "dorathypaul@gmail.com",
+            password:
+              "$2b$10$r/1eL5AdaKZ3L/mzNA62Nu412MoMo1N.Cgvo4p/opoHtEJM6.f/0S",
+            role: "admin",
+          });
+        } else {
+          console.log("⚠️ Default admin already exists");
+        }
+      })
+      .then(() => {
+        console.log("✅ Default admin user created");
+      })
+      .catch((err) => {
+        console.error("❌ Error creating default admin user:", err.message);
+      });
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);
     process.exit(1);
   });
-
-

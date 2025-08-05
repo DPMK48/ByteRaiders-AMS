@@ -23,7 +23,8 @@ function ProtectedRoute({ children, roles }: { children: JSX.Element, roles: str
 function AppContent() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<Login onLoginSuccess={() => { /* handle login */ }} />} />
+
 
       <Route
         path="/admin/dashboard"
