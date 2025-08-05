@@ -130,7 +130,7 @@ export function QRScanner() {
           scanner
             .start(
               cameraId,
-              { fps: 10, qrbox: 250 },
+              { fps: 10, qrbox: {width: 200, height: 200} },
               async (decodedText) => {
                 if (hasScanned) return;
                 hasScanned = true;
@@ -526,7 +526,7 @@ console.log("🎯 Final Status:", attendanceStatus);
             <div className="relative aspect-square max-w-64 mx-auto bg-background-muted rounded-xl border-2 border-dashed border-card-border flex items-center justify-center">
               {isScanning ? (
                 <div className="flex justify-center">
-                  <div ref={qrScannerRef} className="w-full max-w-sm" />
+                  <div ref={qrScannerRef} className="w-[300px] h-[300px]" />
                 </div>
               ) : (
                 <div className="text-center space-y-3">
