@@ -376,7 +376,7 @@ export function AdminDashboard() {
     }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}auth/users/${editingStudent.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${editingStudent.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

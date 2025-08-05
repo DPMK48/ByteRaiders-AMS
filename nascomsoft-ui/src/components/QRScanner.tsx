@@ -53,7 +53,7 @@ export function QRScanner() {
   const [todayRecord, setTodayRecord] = useState<AttendanceRecord | null>(null);
   const qrScannerRef = useRef<HTMLDivElement | null>(null);
 
-  const HUB_LOCATION = { lat:  6.5243793 , lng: 3.3792057 }; // Updated hub location
+  const HUB_LOCATION = { lat:  6.5243793 , lng: 3.3792057}; // Updated hub location
   const LOCATION_RADIUS = 100; // meters
 
   // 🔁 Fetch and store location ONCE
@@ -172,10 +172,11 @@ export function QRScanner() {
     scanner: Html5Qrcode
   ) => {
     try {
-      console.log("📤 Raw payload sent to backend:", {
-        location: location ? { lat: location.lat, lng: location.lng } : null,
-        qrCodeContent: decodedText,
-      });
+      const payload = {
+    location: location ? { lat: location.lat, lng: location.lng } : null,
+    qrCodeContent: decodedText,
+  };
+  console.log("📤 Raw payload sent to backend:", payload);
       const res = await fetch(`${import.meta.env.VITE_API_URL}/attendance/mark`, {
         method: "POST",
         headers: {
@@ -290,7 +291,7 @@ export function QRScanner() {
   const fetchTodayRecord = async () => {
     try {
       const response = await fetch(
-        `/api/attendance/today?userId=${user?.id}`,
+        `${import.meta.env.VITE_API_URL}/attendance/today?userId=${user?.id}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("nascomsoft-token")}`,
