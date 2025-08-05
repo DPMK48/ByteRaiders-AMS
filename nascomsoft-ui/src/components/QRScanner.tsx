@@ -176,7 +176,7 @@ export function QRScanner() {
         location: location ? { lat: location.lat, lng: location.lng } : null,
         qrCodeContent: decodedText,
       });
-      const res = await fetch("http://localhost:5000/api/attendance/mark", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/attendance/mark`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

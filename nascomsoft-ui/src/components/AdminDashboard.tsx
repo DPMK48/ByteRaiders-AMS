@@ -144,13 +144,13 @@ export function AdminDashboard() {
 
         // Fetch all data concurrently
         const [staffRes, studentsRes, overviewRes] = await Promise.all([
-          fetch("http://localhost:5000/api/auth/staff", {
+          fetch(`${import.meta.env.VITE_API_URL}/auth/staff`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("http://localhost:5000/api/auth/student", {
+          fetch(`${import.meta.env.VITE_API_URL}/auth/student`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch("http://localhost:5000/api/attendance/overview", {
+          fetch(`${import.meta.env.VITE_API_URL}/attendance/overview`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -224,7 +224,7 @@ export function AdminDashboard() {
     try {
       const token = localStorage.getItem("nascomsoft-token"); // Admin's JWT token
 
-      const res = await fetch("http://localhost:5000/api/auth/register/staff", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register/staff`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -271,7 +271,7 @@ export function AdminDashboard() {
       const token = localStorage.getItem("nascomsoft-token");
 
       const res = await fetch(
-        "http://localhost:5000/api/auth/register/student",
+        `${import.meta.env.VITE_API_URL}/auth/register/student`,
         {
           method: "POST",
           headers: {
@@ -338,7 +338,7 @@ export function AdminDashboard() {
     }
 
     try {
-      const res = await fetch(`/api/auth/users/${editingStaff.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${editingStaff.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -376,7 +376,7 @@ export function AdminDashboard() {
     }
 
     try {
-      const res = await fetch(`/api/auth/users/${editingStudent.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}auth/users/${editingStudent.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -404,7 +404,7 @@ export function AdminDashboard() {
 
   const removeStaff = async (id: string) => {
     try {
-      const res = await fetch(`/api/auth/users/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${id}`, {
         method: "DELETE",
       });
 
@@ -421,7 +421,7 @@ export function AdminDashboard() {
   const removeStudent = async (id: string) => {
     try {
       console.log("editingStudent:", editingStudent);
-      const res = await fetch(`/api/auth/users/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${id}`, {
         method: "DELETE",
       });
 

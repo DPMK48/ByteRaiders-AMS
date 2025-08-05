@@ -14,7 +14,20 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // 🔧 Middleware
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+const allowedOrigins = [
+  "http://localhost:5173",           // local dev
+  "https://your-app.vercel.app"     // deployed frontend
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // 🔗 Routes

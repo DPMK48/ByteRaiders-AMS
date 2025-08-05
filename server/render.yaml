@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: attendance-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node index.mjs
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
