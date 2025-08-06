@@ -16,7 +16,7 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (password: string, emailOverride?: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
   isInitialized: boolean; // ✅ New

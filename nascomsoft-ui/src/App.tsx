@@ -6,8 +6,9 @@ import { Login } from './components/Login';
 import { QRScanner } from './components/QRScanner';
 import { AdminDashboard } from './components/AdminDashboard';
 import { Toaster } from './components/ui/sonner';
+import type React from "react";
 
-function ProtectedRoute({ children, roles }: { children: JSX.Element, roles: string[] }) {
+function ProtectedRoute({ children, roles }: { children: React.ReactNode, roles: string[] }) {
   const { user, isInitialized } = useAuth();
 
   // Show nothing or a loader until we've checked localStorage

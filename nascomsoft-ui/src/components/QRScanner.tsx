@@ -53,7 +53,7 @@ export function QRScanner() {
   const [todayRecord, setTodayRecord] = useState<AttendanceRecord | null>(null);
   const qrScannerRef = useRef<HTMLDivElement | null>(null);
 
-  const HUB_LOCATION = { lat:  10.272637, lng: 9.794106}; // Updated hub location
+  const HUB_LOCATION = { lat: 10.272637, lng: 9.794106}; // Updated hub location
   const LOCATION_RADIUS = 500; // meters
 
   // 🔁 Fetch and store location ONCE
@@ -120,27 +120,28 @@ export function QRScanner() {
       qrScannerRef.current.id ||= scannerId;
       scanner = new Html5Qrcode(scannerId);
 
-      Html5Qrcode.getCameras()
-      .then(devices => {
+      Html5Qrcode.getCameras().then((devices) => {
         if (devices && devices.length) {
           //  try select back camera
-          const backCamera = devices.find(device => device.label.toLowerCase().includes("back"))
-          const cameraId = backCamera ? backCamera.id : devices[0].id
-          
+          const backCamera = devices.find((device) =>
+            device.label.toLowerCase().includes("back")
+          );
+          const cameraId = backCamera ? backCamera.id : devices[0].id;
+
           scanner
             .start(
               cameraId,
-              { fps: 10, qrbox: {width: 200, height: 200} },
+              { fps: 10, qrbox: { width: 200, height: 200 } },
               async (decodedText) => {
                 if (hasScanned) return;
                 hasScanned = true;
-    
+
                 if (decodedText !== "HUB-ATTENDANCE-2025") {
                   setMessage("❌ Invalid QR code scanned");
                   stopScanner(scanner);
                   return;
                 }
-    
+
                 await scanAndSubmitAttendance(decodedText, scanner);
               },
               (errorMessage) => {
@@ -155,8 +156,7 @@ export function QRScanner() {
               setIsScanning(false);
             });
         }
-      })
-
+      });
     }
 
     return () => {
@@ -183,21 +183,27 @@ export function QRScanner() {
   ) => {
     try {
       const payload = {
-    location: location ? { lat: location.lat, lng: location.lng } : null,
-    qrCodeContent: decodedText,
-  };
-  console.log("📤 Raw payload sent to backend:", payload);
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/attendance/mark`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("nascomsoft-token")}`,
-        },
-        body: JSON.stringify({
-          location: location ? { lat: location.lat, lng: location.lng } : null,
-          qrCodeContent: decodedText,
-        }),
-      });
+        location: location ? { lat: location.lat, lng: location.lng } : null,
+        qrCodeContent: decodedText,
+      };
+      console.log("📤 Raw payload sent to backend:", payload);
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/attendance/mark`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("nascomsoft-token")}`,
+          },
+          body: JSON.stringify({
+            location: location
+              ? { lat: location.lat, lng: location.lng }
+              : null,
+            qrCodeContent: decodedText,
+          }),
+        }
+      );
 
       const data = await res.json();
 
@@ -298,51 +304,52 @@ export function QRScanner() {
   };
 
   useEffect(() => {
-  const fetchTodayRecord = async () => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/attendance/today?userId=${user?.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("nascomsoft-token")}`,
-          },
+    const fetchTodayRecord = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/attendance/today?userId=${user?.id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem(
+                "nascomsoft-token"
+              )}`,
+            },
+          }
+        );
+
+        const data = await response.json();
+        console.log("📆 Today Record Response:", data);
+
+        if (data.status === "notCheckedIn") {
+          setAttendanceStatus("none");
+          setTodayRecord(null);
+          setMessage("");
+        } else if (data.status === "checkedOut") {
+          setAttendanceStatus("checked-out");
+          setTodayRecord(data);
+          setMessage("✅ You’ve already checked in and out for today.");
+        } else if (data.status === "checkedIn") {
+          setAttendanceStatus("checked-in");
+          setTodayRecord(data);
+          setMessage("🕒 You’ve checked in. Ready to check out.");
+        } else {
+          setAttendanceStatus("none");
+          setTodayRecord(null);
+          setMessage("");
         }
-      );
-
-      const data = await response.json();
-      console.log("📆 Today Record Response:", data);
-
-      if (data.status === "notCheckedIn") {
-        setAttendanceStatus("none");
-        setTodayRecord(null);
-        setMessage("");
-      } else if (data.status === "checkedOut") {
-        setAttendanceStatus("checked-out");
-        setTodayRecord(data);
-        setMessage("✅ You’ve already checked in and out for today.");
-      } else if (data.status === "checkedIn") {
-        setAttendanceStatus("checked-in");
-        setTodayRecord(data);
-        setMessage("🕒 You’ve checked in. Ready to check out.");
-      } else {
-        setAttendanceStatus("none");
-        setTodayRecord(null);
-        setMessage("");
+      } catch (error) {
+        console.error("Failed to fetch today's attendance:", error);
       }
-    } catch (error) {
-      console.error("Failed to fetch today's attendance:", error);
+    };
+
+    if (user?.id) {
+      fetchTodayRecord();
     }
-  };
-
-  if (user?.id) {
-    fetchTodayRecord();
-  }
-  console.log("👤 Current user ID:", user?.id);
-}, [user?.id]);
-
+    console.log("👤 Current user ID:", user?.id);
+  }, [user?.id]);
 
   console.log("🧾 Final Message:", message);
-console.log("🎯 Final Status:", attendanceStatus);
+  console.log("🎯 Final Status:", attendanceStatus);
 
   return (
     <div className="min-h-screen bg-background-secondary">
@@ -418,32 +425,37 @@ console.log("🎯 Final Status:", attendanceStatus);
             </div>
 
             {todayRecord?.checkInTime && (
-  <div className="bg-background-muted rounded-lg p-4 space-y-2">
-    <div className="flex justify-between items-center text-sm">
-      <span className="text-foreground-muted">Check-in:</span>
-      <span className="font-medium text-foreground">
-        {new Date(todayRecord.checkInTime).toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })}
-      </span>
-    </div>
-    {todayRecord.checkOutTime && (
-      <div className="flex justify-between items-center text-sm">
-        <span className="text-foreground-muted">Check-out:</span>
-        <span className="font-medium text-foreground">
-          {new Date(todayRecord.checkOutTime).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })}
-        </span>
-      </div>
-    )}
-  </div>
-)}
-
+              <div className="bg-background-muted rounded-lg p-4 space-y-2">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-foreground-muted">Check-in:</span>
+                  <span className="font-medium text-foreground">
+                    {new Date(todayRecord.checkInTime).toLocaleTimeString(
+                      "en-US",
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      }
+                    )}
+                  </span>
+                </div>
+                {todayRecord.checkOutTime && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-foreground-muted">Check-out:</span>
+                    <span className="font-medium text-foreground">
+                      {new Date(todayRecord.checkOutTime).toLocaleTimeString(
+                        "en-US",
+                        {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        }
+                      )}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

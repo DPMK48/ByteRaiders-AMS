@@ -1,4 +1,3 @@
-// routes/attendance.mjs
 import express from "express";
 import authUser from "../middleware/authUser.mjs";
 import Attendance from "../models/Attendance.mjs";
@@ -40,7 +39,6 @@ router.post("/mark", authUser, async (req, res) => {
     HUB_LNG
   );
   if (distance > 500) {
-   
     return res
       .status(400)
       .json({ error: "You are too far from the hub location" });
@@ -58,6 +56,37 @@ router.post("/mark", authUser, async (req, res) => {
       date: { $gte: startOfDay, $lte: endOfDay },
     });
 
+    // Helper to emit attendanceUpdated with populated user info
+    const emitAttendanceUpdate = async (attendanceDoc) => {
+      try {
+        const io = req.app.get("io");
+        if (!io) return;
+
+        // Ensure we have fresh user data
+        const user = await User.findById(userId).lean();
+
+        const payload = {
+          _id: attendanceDoc._id,
+          userId: user?._id,
+          name: user?.name ?? null,
+          email: user?.email ?? null,
+          role: user?.role ?? null,
+          date: attendanceDoc.date,
+          checkIn: attendanceDoc.checkInTime
+            ? new Date(attendanceDoc.checkInTime).toISOString()
+            : null,
+          checkOut: attendanceDoc.checkOutTime
+            ? new Date(attendanceDoc.checkOutTime).toISOString()
+            : null,
+          status: attendanceDoc.checkInTime ? "present" : "absent",
+        };
+
+        io.emit("attendanceUpdated", payload);
+      } catch (err) {
+        console.warn("Failed to emit attendanceUpdated:", err.message || err);
+      }
+    };
+
     if (!attendance) {
       // First-time check-in
       attendance = new Attendance({
@@ -67,15 +96,15 @@ router.post("/mark", authUser, async (req, res) => {
       });
       await attendance.save();
 
+      // emit update
+      await emitAttendanceUpdate(attendance);
+
       return res.status(200).json({
-        message: `✅ Checked in successfully at ${now.toLocaleTimeString(
-          "en-US",
-          {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          }
-        )}`,
+        message: `✅ Checked in successfully at ${now.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        })}`,
         userId,
         checkInTime: attendance.checkInTime,
         date: attendance.date,
@@ -84,6 +113,9 @@ router.post("/mark", authUser, async (req, res) => {
       // Check-out
       attendance.checkOutTime = now;
       await attendance.save();
+
+      // emit update
+      await emitAttendanceUpdate(attendance);
 
       return res.status(200).json({
         message: `✅ Checked out at ${now.toLocaleTimeString("en-US", {
@@ -195,20 +227,6 @@ router.get("/today", authUser, async (req, res) => {
   });
 });
 
-// router.get("/today/all", authUser, async (req, res) => {
-//   try {
-//     const today = new Date().toISOString().split("T")[0]; // 'YYYY-MM-DD'
-
-//     const records = await Attendance.find({
-//       date: today
-//     }).populate("userId", "name email role");
-
-//     res.json(records);
-//   } catch (err) {
-//     res.status(500).json({ error: "Failed to fetch today's attendance records" });
-//   }
-// });
-
 // Fetch attendance overview
 router.get("/overview", async (req, res) => {
   try {
@@ -225,11 +243,11 @@ router.get("/overview", async (req, res) => {
         date: record.date,
         checkIn: record.checkInTime
           ? new Date(record.checkInTime).toISOString()
-          : "—",
+          : null,
         checkOut: record.checkOutTime
           ? new Date(record.checkOutTime).toISOString()
-          : "—",
-        status: record.status || "absent",
+          : null,
+        status: record.checkInTime ? "present" : "absent",
       }));
 
     res.json(formatted);
