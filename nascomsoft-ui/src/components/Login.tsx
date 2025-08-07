@@ -24,10 +24,15 @@ export function Login({ onLoginSuccess }: LoginProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, user } = useAuth();
+  console.log("User role:", user);
+
 
   const stampedEmail = localStorage.getItem("stampedEmail");
-
+  const userRole = localStorage.getItem("userRole")
+  
+  
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -58,10 +63,12 @@ export function Login({ onLoginSuccess }: LoginProps) {
 
   const handleSwitchUser = () => {
     localStorage.removeItem("stampedEmail");
+    // localStorage.removeItem("userRole");
     setEmail("");
     setPassword("");
     window.location.reload(); // This will refresh the page and reload the Login component
   };
+
 
   return (
     <div className="min-h-screen bg-background-secondary">
@@ -150,7 +157,7 @@ export function Login({ onLoginSuccess }: LoginProps) {
                 </Button>
 
                 {/* Switch user if stamped email exists */}
-                {stampedEmail && (
+                {stampedEmail && userRole === "admin" && (
                   <Button
                     variant="ghost"
                     type="button"

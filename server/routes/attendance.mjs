@@ -5,6 +5,21 @@ import User from "../models/User.mjs";
 
 const router = express.Router();
 
+// ⏰ Force date logic to Africa/Lagos timezone
+function getLagosStartAndEndOfDay() {
+  const lagosNow = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" })
+  );
+
+  const startOfDay = new Date(lagosNow);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(lagosNow);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  return { startOfDay, endOfDay };
+}
+
 // POST /api/attendance/mark
 router.post("/mark", authUser, async (req, res) => {
   const userId = req.user?.userId;
@@ -44,11 +59,12 @@ router.post("/mark", authUser, async (req, res) => {
       .json({ error: "You are too far from the hub location" });
   }
 
-  const now = new Date();
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+  const now = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" })
+  );
+  const { startOfDay, endOfDay } = getLagosStartAndEndOfDay();
+
+  console.log("Server Date:", new Date().toString());
 
   try {
     let attendance = await Attendance.findOne({
@@ -100,11 +116,14 @@ router.post("/mark", authUser, async (req, res) => {
       await emitAttendanceUpdate(attendance);
 
       return res.status(200).json({
-        message: `✅ Checked in successfully at ${now.toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        })}`,
+        message: `✅ Checked in successfully at ${now.toLocaleTimeString(
+          "en-US",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }
+        )}`,
         userId,
         checkInTime: attendance.checkInTime,
         date: attendance.date,
@@ -160,10 +179,7 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
 router.get("/status", authUser, async (req, res) => {
   const userId = req.user?.userId;
 
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+  const { startOfDay, endOfDay } = getLagosStartAndEndOfDay();
 
   try {
     const attendance = await Attendance.findOne({
@@ -194,15 +210,13 @@ router.get("/status", authUser, async (req, res) => {
 // GET /api/attendance/today
 router.get("/today", authUser, async (req, res) => {
   const today = new Date().toISOString().split("T")[0];
+  console.log("Server Date:", new Date().toString());
+
   const userId = req.user.userId;
 
   console.log("🧠 Checking today's attendance for:", userId, today);
 
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+  const { startOfDay, endOfDay } = getLagosStartAndEndOfDay();
 
   const record = await Attendance.findOne({
     userId,

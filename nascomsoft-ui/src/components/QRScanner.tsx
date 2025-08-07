@@ -538,7 +538,7 @@ export function QRScanner() {
             <div className="relative aspect-square max-w-64 mx-auto bg-background-muted rounded-xl border-2 border-dashed border-card-border flex items-center justify-center">
               {isScanning ? (
                 <div className="flex justify-center">
-                  <div ref={qrScannerRef} className="w-[300px] h-[300px]" />
+                  <div ref={qrScannerRef} className="w-[250px] h-[250px]" />
                 </div>
               ) : (
                 <div className="text-center space-y-3">

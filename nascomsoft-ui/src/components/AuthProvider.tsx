@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-    setIsInitialized(true); // ✅ Mark done checking on mount
+    setIsInitialized(true); // ✅ Mark done checking on mount 
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -76,9 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
 
       const { user: loggedInUser, token } = response.data;
+       console.log("Logged in user:", loggedInUser);
 
       localStorage.setItem("nascomsoft-user", JSON.stringify(loggedInUser));
       localStorage.setItem("nascomsoft-token", token);
+      localStorage.setItem("userRole", loggedInUser.role);
       setUser(loggedInUser);
 
       if (loggedInUser.role === "admin") {

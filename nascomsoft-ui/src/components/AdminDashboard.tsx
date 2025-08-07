@@ -31,6 +31,16 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
+import {
   Users,
   GraduationCap,
   Plus,
@@ -39,6 +49,7 @@ import {
   Download,
   LogOut,
   BarChart3,
+  Calendar,
 } from "lucide-react";
 import {
   Tooltip,
@@ -88,7 +99,22 @@ export function AdminDashboard() {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [isEditStaffOpen, setIsEditStaffOpen] = useState(false);
   const [isEditStudentOpen, setIsEditStudentOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Delete confirmation dialog states
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    name: string;
+    type: 'staff' | 'student';
+  } | null>(null);
+  
+  // Separate search states for each section
+  const [studentSearchTerm, setStudentSearchTerm] = useState("");
+  const [staffSearchTerm, setStaffSearchTerm] = useState("");
+  const [attendanceSearchTerm, setAttendanceSearchTerm] = useState("");
+  const [attendanceDateFrom, setAttendanceDateFrom] = useState("");
+  const [attendanceDateTo, setAttendanceDateTo] = useState("");
+  
   const [filterRole, setFilterRole] = useState<"all" | UserRole>("all");
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -379,6 +405,47 @@ export function AdminDashboard() {
   const totalRecords = attendanceOverview.length;
 
   //
+  // Delete confirmation handlers
+  //
+  const handleDeleteClick = (id: string, name: string, type: 'staff' | 'student') => {
+    setDeleteTarget({ id, name, type });
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+
+    try {
+      const token = localStorage.getItem("nascomsoft-token");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${deleteTarget.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!res.ok) throw new Error("Delete failed");
+
+      if (deleteTarget.type === 'staff') {
+        setStaff((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+        toast.success("Staff member deleted successfully");
+      } else {
+        setStudents((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+        toast.success("Student deleted successfully");
+      }
+    } catch (error) {
+      toast.error(`Failed to delete ${deleteTarget.type}`);
+      console.error(error);
+    } finally {
+      setDeleteConfirmOpen(false);
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setDeleteTarget(null);
+  };
+
+  //
   // Add / Edit / Remove operations (ensure token included)
   //
   const addStaff = async () => {
@@ -405,7 +472,7 @@ export function AdminDashboard() {
         status: "absent",
       };
 
-      setStaff((prev) => [...prev, staffMember]);
+      setStaff((prev) => [staffMember, ...prev]);
       setNewStaff({ name: "", email: "", position: "", password: "" });
       setIsAddStaffOpen(false);
       toast.success("Staff member added successfully!");
@@ -437,7 +504,7 @@ export function AdminDashboard() {
         status: "absent",
       };
 
-      setStudents((prev) => [...prev, student]);
+      setStudents((prev) => [student, ...prev]);
       setNewStudent({ name: "", email: "", department: "", password: "" });
       setIsAddStudentOpen(false);
       toast.success("Student added successfully!");
@@ -523,45 +590,16 @@ export function AdminDashboard() {
     }
   };
 
-  const removeStaff = async (id: string) => {
-    try {
-      const token = localStorage.getItem("nascomsoft-token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Delete failed");
-      setStaff((prev) => prev.filter((s) => s.id !== id));
-      toast.success("Staff deleted successfully");
-    } catch (error) {
-      toast.error("Failed to delete staff");
-      console.error(error);
-    }
-  };
-
-  const removeStudent = async (id: string) => {
-    try {
-      const token = localStorage.getItem("nascomsoft-token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Delete failed");
-      setStudents((prev) => prev.filter((s) => s.id !== id));
-      toast.success("Student deleted successfully");
-    } catch (error) {
-      toast.error("Failed to delete student");
-      console.error(error);
-    }
-  };
-
   //
-  // Export (CSV) - uses attendanceOverview (single source of truth)
+  // Export (CSV) - uses filtered attendance data
   //
   const exportAttendance = () => {
+    // Use filtered attendance data instead of all attendance
+    const dataToExport = filteredAttendance.length > 0 ? filteredAttendance : attendanceOverview;
+    
     const csvContent = [
       ["Name", "Role", "Email", "Date", "Check-in", "Check-out", "Status"],
-      ...attendanceOverview.map((record) => [
+      ...dataToExport.map((record) => [
         record.userName,
         record.userRole,
         record.email,
@@ -578,32 +616,97 @@ export function AdminDashboard() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `attendance-${new Date().toISOString().split("T")[0]}.csv`;
+    
+    // Add filter info to filename
+    let filename = `attendance-${new Date().toISOString().split("T")[0]}`;
+    if (attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all") {
+      filename += "-filtered";
+    }
+    filename += ".csv";
+    
+    a.download = filename;
     a.click();
     window.URL.revokeObjectURL(url);
   };
 
+  // Quick date range setters
+  const setDateRange = (months: number) => {
+    const today = new Date();
+    const fromDate = new Date(today);
+    fromDate.setMonth(today.getMonth() - months);
+    
+    setAttendanceDateFrom(fromDate.toISOString().split("T")[0]);
+    setAttendanceDateTo(today.toISOString().split("T")[0]);
+  };
+
+  const clearDateRange = () => {
+    setAttendanceDateFrom("");
+    setAttendanceDateTo("");
+  };
+
   //
-  // Filtering / search (use attendanceOverview)
+  // Filtering / search with separate search terms for each section
   //
+  const filteredStudents = useMemo(() => {
+    return students.filter((student) => {
+      const matchesSearch =
+        student.name?.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+        student.email?.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+        student.department?.toLowerCase().includes(studentSearchTerm.toLowerCase());
+      return matchesSearch;
+    });
+  }, [students, studentSearchTerm]);
+
+  const filteredStaff = useMemo(() => {
+    return staff.filter((member) => {
+      const matchesSearch =
+        member.name?.toLowerCase().includes(staffSearchTerm.toLowerCase()) ||
+        member.email?.toLowerCase().includes(staffSearchTerm.toLowerCase()) ||
+        member.position?.toLowerCase().includes(staffSearchTerm.toLowerCase());
+      return matchesSearch;
+    });
+  }, [staff, staffSearchTerm]);
+
   const filteredAttendance = useMemo(() => {
     return attendanceOverview.filter((record) => {
       const matchesSearch =
-        record.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        record.userName?.toLowerCase().includes(attendanceSearchTerm.toLowerCase()) ||
+        record.email?.toLowerCase().includes(attendanceSearchTerm.toLowerCase());
+      
       const matchesRole = filterRole === "all" || record.userRole === filterRole;
-      return matchesSearch && matchesRole;
+      
+      let matchesDateRange = true;
+      if (attendanceDateFrom || attendanceDateTo) {
+        const recordDate = recordDateKey(record.date);
+        if (recordDate) {
+          const recordDateObj = new Date(recordDate);
+          
+          if (attendanceDateFrom) {
+            const fromDate = new Date(attendanceDateFrom);
+            matchesDateRange = matchesDateRange && recordDateObj >= fromDate;
+          }
+          
+          if (attendanceDateTo) {
+            const toDate = new Date(attendanceDateTo);
+            // Include the entire "to" date by setting time to end of day
+            toDate.setHours(23, 59, 59, 999);
+            matchesDateRange = matchesDateRange && recordDateObj <= toDate;
+          }
+        }
+      }
+      
+      return matchesSearch && matchesRole && matchesDateRange;
     });
-  }, [attendanceOverview, searchTerm, filterRole]);
+  }, [attendanceOverview, attendanceSearchTerm, filterRole, attendanceDateFrom, attendanceDateTo]);
 
   return (
     <div className="min-h-screen bg-background-secondary">
       {/* Header */}
-      <div className="bg-card shadow-sm border-b border-card-border">
+      <div className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h1 className="text-2xl font-semibold text-foreground">Admin Dashboard</h1>
+              <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
               <p className="text-sm text-foreground-muted">Welcome back, {user?.name}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -622,7 +725,7 @@ export function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="card-elevated card-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-foreground-muted">Total Students</CardTitle>
+              <CardTitle className="text-sm font-bold text-foreground-muted">Total Students</CardTitle>
               <div className="p-2 bg-primary-light rounded-lg">
                 <GraduationCap className="h-4 w-4 text-primary" />
               </div>
@@ -637,7 +740,7 @@ export function AdminDashboard() {
 
           <Card className="card-elevated card-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-foreground-muted">Total Staff</CardTitle>
+              <CardTitle className="text-sm font-bold text-foreground-muted">Total Staff</CardTitle>
               <div className="p-2 bg-primary-light rounded-lg">
                 <Users className="h-4 w-4 text-primary" />
               </div>
@@ -652,7 +755,7 @@ export function AdminDashboard() {
 
           <Card className="card-elevated card-hover">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-foreground-muted">Today's Check-ins</CardTitle>
+              <CardTitle className="text-sm font-bold text-foreground-muted">Today's Check-ins</CardTitle>
               <div className="p-2 bg-success-light rounded-lg">
                 <BarChart3 className="h-4 w-4 text-success" />
               </div>
@@ -675,7 +778,7 @@ export function AdminDashboard() {
           {/* Students Management */}
           <TabsContent value="students" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg">Student Management</h3>
+              <h3 className="text-lg font-bold">Student Management</h3>
               <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
                 <DialogTrigger asChild>
                   <Button className="button-primary">
@@ -685,24 +788,24 @@ export function AdminDashboard() {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Add New Student</DialogTitle>
+                    <DialogTitle className="font-bold">Add New Student</DialogTitle>
                     <DialogDescription>Enter the student details below.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="student-name">Name</Label>
+                      <Label htmlFor="student-name" className="font-bold">Name</Label>
                       <Input id="student-name" value={newStudent.name} onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} placeholder="Student name" />
                     </div>
                     <div>
-                      <Label htmlFor="student-email">Email</Label>
+                      <Label htmlFor="student-email" className="font-bold">Email</Label>
                       <Input id="student-email" type="email" value={newStudent.email} onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })} placeholder="student@nascomsoft.com" />
                     </div>
                     <div>
-                      <Label htmlFor="student-department">Department</Label>
+                      <Label htmlFor="student-department" className="font-bold">Department</Label>
                       <Input id="student-department" value={newStudent.department} onChange={(e) => setNewStudent({ ...newStudent, department: e.target.value })} placeholder="Computer Science" />
                     </div>
                     <div>
-                      <Label htmlFor="student-password">Password</Label>
+                      <Label htmlFor="student-password" className="font-bold">Password</Label>
                       <Input id="student-password" type="password" value={newStudent.password} onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })} placeholder="Default password" />
                     </div>
                   </div>
@@ -713,62 +816,79 @@ export function AdminDashboard() {
                 </DialogContent>
               </Dialog>
             </div>
+            
+            {/* Student Search */}
+            <div className="flex-1">
+              <Input 
+                placeholder="Search students by name, email, or department..." 
+                value={studentSearchTerm} 
+                onChange={(e) => setStudentSearchTerm(e.target.value)} 
+                className="max-w-sm border-gray-300" 
+              />
+            </div>
 
             <Card className="shadow-lg border-0 rounded-2xl overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell>{student.name}</TableCell>
-                      <TableCell>{student.email}</TableCell>
-                      <TableCell>{student.department}</TableCell>
-                      <TableCell>
-                        <Badge variant={student.status === "present" ? "default" : "secondary"} className={student.status === "present" ? "status-success" : ""}>
-                          {student.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <TooltipProvider>
-                          <div className="flex gap-1">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="sm" onClick={() => editStudent(student)} className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Edit Student</p></TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="sm" onClick={() => removeStudent(student.id)} className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 transition-colors">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Delete Student</p></TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </TooltipProvider>
-                      </TableCell>
+              <div className="max-h-96 overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+                    <TableRow>
+                      <TableHead className="font-bold">Name</TableHead>
+                      <TableHead className="font-bold">Email</TableHead>
+                      <TableHead className="font-bold">Department</TableHead>
+                      <TableHead className="font-bold">Status</TableHead>
+                      <TableHead className="font-bold">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredStudents.map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell>{student.name}</TableCell>
+                        <TableCell>{student.email}</TableCell>
+                        <TableCell>{student.department}</TableCell>
+                        <TableCell>
+                          <Badge variant={student.status === "present" ? "default" : "secondary"} className={student.status === "present" ? "status-success" : ""}>
+                            {student.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <TooltipProvider>
+                            <div className="flex gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="sm" onClick={() => editStudent(student)} className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Edit Student</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(student.id, student.name, 'student')} className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Delete Student</p></TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </TooltipProvider>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {filteredStudents.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {studentSearchTerm ? "No students found matching your search." : "No students found."}
+                  </div>
+                )}
+              </div>
             </Card>
           </TabsContent>
 
           {/* Staff Management */}
           <TabsContent value="staff" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg">Staff Management</h3>
+              <h3 className="text-lg font-bold">Staff Management</h3>
               <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
                 <DialogTrigger asChild>
                   <Button className="button-primary button-enhanced">
@@ -778,24 +898,24 @@ export function AdminDashboard() {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Add New Staff Member</DialogTitle>
+                    <DialogTitle className="font-bold">Add New Staff Member</DialogTitle>
                     <DialogDescription>Enter the staff member details below.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="staff-name">Name</Label>
+                      <Label htmlFor="staff-name" className="font-bold">Name</Label>
                       <Input id="staff-name" value={newStaff.name} onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} placeholder="Staff name" />
                     </div>
                     <div>
-                      <Label htmlFor="staff-email">Email</Label>
+                      <Label htmlFor="staff-email" className="font-bold">Email</Label>
                       <Input id="staff-email" type="email" value={newStaff.email} onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })} placeholder="staff@nascomsoft.com" />
                     </div>
                     <div>
-                      <Label htmlFor="staff-position">Position</Label>
+                      <Label htmlFor="staff-position" className="font-bold">Position</Label>
                       <Input id="staff-position" value={newStaff.position || ""} onChange={(e) => setNewStaff({ ...newStaff, position: e.target.value })} placeholder="Senior Developer" />
                     </div>
                     <div>
-                      <Label htmlFor="staff-password">Password</Label>
+                      <Label htmlFor="staff-password" className="font-bold">Password</Label>
                       <Input id="staff-password" type="password" value={newStaff.password} onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })} placeholder="Default password" />
                     </div>
                   </div>
@@ -806,148 +926,295 @@ export function AdminDashboard() {
                 </DialogContent>
               </Dialog>
             </div>
+            
+            {/* Staff Search */}
+            <div className="flex-1">
+              <Input 
+                placeholder="Search staff by name, email, or position..." 
+                value={staffSearchTerm} 
+                onChange={(e) => setStaffSearchTerm(e.target.value)} 
+                className="max-w-sm border-gray-300" 
+              />
+            </div>
 
             <Card className="shadow-lg border-0 rounded-2xl overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {staff.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell>{member.name}</TableCell>
-                      <TableCell>{member.email}</TableCell>
-                      <TableCell>{member.position || "_"}</TableCell>
-                      <TableCell>
-                        <Badge variant={member.status === "present" ? "default" : "secondary"} className={member.status === "present" ? "status-success" : ""}>
-                          {member.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <TooltipProvider>
-                          <div className="flex gap-1">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="sm" onClick={() => editStaff(member)} className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Edit Staff Member</p></TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="ghost" size="sm" onClick={() => removeStaff(member.id)} className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 transition-colors">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Delete Staff Member</p></TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </TooltipProvider>
-                      </TableCell>
+              <div className="max-h-96 overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+                    <TableRow>
+                      <TableHead className="font-bold">Name</TableHead>
+                      <TableHead className="font-bold">Email</TableHead>
+                      <TableHead className="font-bold">Position</TableHead>
+                      <TableHead className="font-bold">Status</TableHead>
+                      <TableHead className="font-bold">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredStaff.map((member) => (
+                      <TableRow key={member.id}>
+                        <TableCell>{member.name}</TableCell>
+                        <TableCell>{member.email}</TableCell>
+                        <TableCell>{member.position || "_"}</TableCell>
+                        <TableCell>
+                          <Badge variant={member.status === "present" ? "default" : "secondary"} className={member.status === "present" ? "status-success" : ""}>
+                            {member.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <TooltipProvider>
+                            <div className="flex gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="sm" onClick={() => editStaff(member)} className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Edit Staff Member</p></TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(member.id, member.name, 'staff')} className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Delete Staff Member</p></TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </TooltipProvider>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {filteredStaff.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {staffSearchTerm ? "No staff members found matching your search." : "No staff members found."}
+                  </div>
+                )}
+              </div>
             </Card>
           </TabsContent>
 
           {/* Attendance Overview */}
           <TabsContent value="attendance" className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <h3 className="text-lg">Attendance Overview</h3>
+              <h3 className="text-lg font-bold">Attendance Overview</h3>
               <div className="flex gap-2">
                 <Button onClick={exportAttendance} variant="outline">
                   <Download className="h-4 w-4 mr-2" />
-                  Export CSV
+                  Export {filteredAttendance.length > 0 && (attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all") 
+                    ? `Filtered (${filteredAttendance.length})` 
+                    : 'All'} CSV
                 </Button>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <Input placeholder="Search by name or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="max-w-sm" />
+            {/* Attendance Search and Filters */}
+            <div className="space-y-4">
+              {/* Name/Email Search and Role Filter on same line */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                <div className="flex-1">
+                  <Input 
+                    placeholder="Search by name or email..." 
+                    value={attendanceSearchTerm} 
+                    onChange={(e) => setAttendanceSearchTerm(e.target.value)} 
+                    className="max-w-md border-gray-300" 
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Select value={filterRole} onValueChange={(value: any) => setFilterRole(value)}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Filter by role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="staff">Staff</SelectItem>
+                      <SelectItem value="student">Student</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <Select value={filterRole} onValueChange={(value: any) => setFilterRole(value)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Filter by role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
-                </SelectContent>
-              </Select>
+              
+              {/* Date Search - Single Day First */}
+              <div className="space-y-3 flex flex-col items-start">
+                <div className="flex gap-3 items-center">
+                  <Calendar className="h-4 w-4 text-gray-400" />
+                  <Label className="text-sm font-bold">Search by Date:</Label>
+                  <Input
+                    type="date"
+                    placeholder="Select specific date"
+                    value={attendanceDateFrom === attendanceDateTo ? attendanceDateFrom : ""}
+                    onChange={(e) => {
+                      const selectedDate = e.target.value;
+                      setAttendanceDateFrom(selectedDate);
+                      setAttendanceDateTo(selectedDate);
+                    }}
+                    className="w-40 font-bold"
+                  />
+                </div>
+                
+                {/* Custom Date Range */}
+                <div className="ml-1 flex items-center">
+                  <Label className="text-sm text-gray-600 pr-3">Or select custom range:</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      type="date"
+                      placeholder="From date"
+                      value={attendanceDateFrom}
+                      onChange={(e) => setAttendanceDateFrom(e.target.value)}
+                      className="w-40 font-bold"
+                    />
+                    <span className="text-sm text-gray-500 pr-1">to</span>
+                    <Input
+                      type="date"
+                      placeholder="To date"
+                      value={attendanceDateTo}
+                      onChange={(e) => setAttendanceDateTo(e.target.value)}
+                      className="w-40 font-bold"
+                    />
+                  </div>
+                  
+                  {/* Quick Date Range Buttons */}
+                  <div className="flex flex-wrap gap-2 pl-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setDateRange(1)}
+                      className="text-xs"
+                    >
+                      Last Month
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setDateRange(3)}
+                      className="text-xs"
+                    >
+                      Last 3 Months
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setDateRange(6)}
+                      className="text-xs"
+                    >
+                      Last 6 Months
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setDateRange(12)}
+                      className="text-xs"
+                    >
+                      Last Year
+                    </Button>
+                    {(attendanceDateFrom || attendanceDateTo) && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={clearDateRange}
+                        className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        Clear Range
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <Card className="shadow-lg border-0 rounded-2xl overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Check-in</TableHead>
-                    <TableHead>Check-out</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAttendance.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell>{record.userName}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {record.userRole}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{record.email}</TableCell>
-                      <TableCell>{record.date ? new Date(record.date).toLocaleDateString() : "-"}</TableCell>
-                      <TableCell>
-                        {record.checkIn ? new Date(record.checkIn).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {record.checkOut ? new Date(record.checkOut).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={record.status === "present" ? "default" : "destructive"}>
-                          {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                        </Badge>
-                      </TableCell>
+              <div className="max-h-96 overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-white dark:bg-gray-800 z-10">
+                    <TableRow>
+                      <TableHead className="font-bold">Name</TableHead>
+                      <TableHead className="font-bold">Role</TableHead>
+                      <TableHead className="font-bold">Email</TableHead>
+                      <TableHead className="font-bold">Date</TableHead>
+                      <TableHead className="font-bold">Check-in</TableHead>
+                      <TableHead className="font-bold">Check-out</TableHead>
+                      <TableHead className="font-bold">Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {filteredAttendance.length === 0 && <div className="text-center py-8 text-muted-foreground">No attendance records found.</div>}
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAttendance.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell>{record.userName}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {record.userRole}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{record.email}</TableCell>
+                        <TableCell>{record.date ? new Date(record.date).toLocaleDateString() : "-"}</TableCell>
+                        <TableCell>
+                          {record.checkIn ? new Date(record.checkIn).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {record.checkOut ? new Date(record.checkOut).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={record.status === "present" ? "default" : "destructive"} className={"status-success"}>
+                            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {filteredAttendance.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all" 
+                      ? "No attendance records found matching your search criteria." 
+                      : "No attendance records found."
+                    }
+                  </div>
+                )}
+              </div>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="font-bold">Are you sure you want to delete this {deleteTarget?.type}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You are about to delete <strong>{deleteTarget?.name}</strong>. This action cannot be undone and will permanently remove the {deleteTarget?.type} from the system.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleDeleteCancel}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              >
+                Delete {deleteTarget?.type === 'staff' ? 'Staff Member' : 'Student'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Edit Student Dialog */}
         <Dialog open={isEditStudentOpen} onOpenChange={setIsEditStudentOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Student</DialogTitle>
+              <DialogTitle className="font-bold">Edit Student</DialogTitle>
               <DialogDescription>Update the student details below.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-student-name">Name</Label>
+                <Label htmlFor="edit-student-name" className="font-bold">Name</Label>
                 <Input id="edit-student-name" value={editStudentForm.name} onChange={(e) => setEditStudentForm({ ...editStudentForm, name: e.target.value })} placeholder="Student name" />
               </div>
               <div>
-                <Label htmlFor="edit-student-email">Email</Label>
+                <Label htmlFor="edit-student-email" className="font-bold">Email</Label>
                 <Input id="edit-student-email" type="email" value={editStudentForm.email} onChange={(e) => setEditStudentForm({ ...editStudentForm, email: e.target.value })} placeholder="student@nascomsoft.com" />
               </div>
               <div>
-                <Label htmlFor="edit-student-department">Department</Label>
+                <Label htmlFor="edit-student-department" className="font-bold">Department</Label>
                 <Input id="edit-student-department" value={editStudentForm.department} onChange={(e) => setEditStudentForm({ ...editStudentForm, department: e.target.value })} placeholder="Computer Science" />
               </div>
             </div>
@@ -962,20 +1229,20 @@ export function AdminDashboard() {
         <Dialog open={isEditStaffOpen} onOpenChange={setIsEditStaffOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Staff Member</DialogTitle>
+              <DialogTitle className="font-bold">Edit Staff Member</DialogTitle>
               <DialogDescription>Update the staff member details below.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-staff-name">Name</Label>
+                <Label htmlFor="edit-staff-name" className="font-bold">Name</Label>
                 <Input id="edit-staff-name" value={editStaffForm.name} onChange={(e) => setEditStaffForm({ ...editStaffForm, name: e.target.value })} placeholder="Staff name" />
               </div>
               <div>
-                <Label htmlFor="edit-staff-email">Email</Label>
+                <Label htmlFor="edit-staff-email" className="font-bold">Email</Label>
                 <Input id="edit-staff-email" type="email" value={editStaffForm.email} onChange={(e) => setEditStaffForm({ ...editStaffForm, email: e.target.value })} placeholder="staff@nascomsoft.com" />
               </div>
               <div>
-                <Label htmlFor="edit-staff-position">Position</Label>
+                <Label htmlFor="edit-staff-position" className="font-bold">Position</Label>
                 <Input id="edit-staff-position" value={editStaffForm.position} onChange={(e) => setEditStaffForm({ ...editStaffForm, position: e.target.value })} placeholder="Senior Developer" />
               </div>
             </div>
