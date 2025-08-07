@@ -50,6 +50,14 @@ import {
   LogOut,
   BarChart3,
   Calendar,
+  Search,
+  Filter,
+  UserCheck,
+  Clock,
+  TrendingUp,
+  Settings,
+  FileText,
+  Shield,
 } from "lucide-react";
 import {
   Tooltip,
@@ -57,6 +65,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
+
 import { useAuth } from "./AuthProvider";
 import type { UserRole } from "./AuthProvider";
 import { ThemeToggle } from "./ThemeToggle";
@@ -68,6 +77,7 @@ interface StaffMember {
   email: string;
   position: string;
   status: "present" | "absent";
+  __ts?: number; 
 }
 
 interface Student {
@@ -76,6 +86,7 @@ interface Student {
   email: string;
   department: string;
   status: "present" | "absent";
+  __ts?: number; 
 }
 
 interface AttendanceRecord {
@@ -145,23 +156,6 @@ export function AdminDashboard() {
     email: "",
     department: "",
   });
-
-  // socket ref
-  const socketRef = useRef<any>(null);
-
-  //
-  // Helpers (Lagos date normalization)
-  //
-  const getLagosDateKey = (d = new Date()) =>
-    new Date(d).toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" }); // "YYYY-MM-DD"
-
-  const recordDateKey = (dateStr?: string | Date | null) =>
-    dateStr
-      ? new Date(dateStr).toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" })
-      : null;
-
-  const sortOverview = (arr: AttendanceRecord[]) =>
-    arr.sort((a, b) => (b.__ts ?? 0) - (a.__ts ?? 0));
 
   //
   // Sync statuses helper (match by email first, fallback to userId)
@@ -320,7 +314,7 @@ export function AdminDashboard() {
         transports: ["websocket", "polling"],
         auth: { token },
       });
-      socketRef.current = socket;
+      // socketRef.current = socket;
 
       socket.on("connect", () => {
         console.log("Admin socket connected ->", socketBase);
@@ -396,6 +390,20 @@ export function AdminDashboard() {
   }, []);
 
   //
+  // Helpers (Lagos date normalization)
+  //
+  const getLagosDateKey = (d = new Date()) =>
+    new Date(d).toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" });
+
+  const recordDateKey = (dateStr?: string | Date | null) =>
+    dateStr
+      ? new Date(dateStr).toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" })
+      : null;
+
+  const sortOverview = (arr: AttendanceRecord[]) =>
+    arr.sort((a, b) => (b.__ts ?? 0) - (a.__ts ?? 0));
+
+  //
   // Counts & derived values (use Lagos-normalized keys)
   //
   const todayKey = getLagosDateKey();
@@ -446,7 +454,7 @@ export function AdminDashboard() {
   };
 
   //
-  // Add / Edit / Remove operations (ensure token included)
+  // Add / Edit operations
   //
   const addStaff = async () => {
     if (!newStaff.name || !newStaff.email || !newStaff.position || !newStaff.password) {
@@ -594,7 +602,6 @@ export function AdminDashboard() {
   // Export (CSV) - uses filtered attendance data
   //
   const exportAttendance = () => {
-    // Use filtered attendance data instead of all attendance
     const dataToExport = filteredAttendance.length > 0 ? filteredAttendance : attendanceOverview;
     
     const csvContent = [
@@ -617,7 +624,6 @@ export function AdminDashboard() {
     const a = document.createElement("a");
     a.href = url;
     
-    // Add filter info to filename
     let filename = `attendance-${new Date().toISOString().split("T")[0]}`;
     if (attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all") {
       filename += "-filtered";
@@ -688,7 +694,6 @@ export function AdminDashboard() {
           
           if (attendanceDateTo) {
             const toDate = new Date(attendanceDateTo);
-            // Include the entire "to" date by setting time to end of day
             toDate.setHours(23, 59, 59, 999);
             matchesDateRange = matchesDateRange && recordDateObj <= toDate;
           }
@@ -700,496 +705,720 @@ export function AdminDashboard() {
   }, [attendanceOverview, attendanceSearchTerm, filterRole, attendanceDateFrom, attendanceDateTo]);
 
   return (
-    <div className="min-h-screen bg-background-secondary">
-      {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
+      {/* Enhanced Header */}
       <div className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-sm text-foreground-muted">Welcome back, {user?.name}</p>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    Admin Dashboard
+                  </h1>
+                  <p className="text-sm text-gray-600">Welcome back, <span className="font-semibold text-blue-600">{user?.name}</span></p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex text-gray-600 items-center space-x-3">
               <ThemeToggle />
-              <Button variant="ghost" size="sm" onClick={logout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
+              {/* <div className="hidden md:flex items-center space-x-2 px-3 py-2 bg-gray-100/50 rounded-lg">
+                <Clock className="h-4 w-4 text-gray-500" />
+                <span className="text-sm text-gray-600">{new Date().toLocaleTimeString()}</span>
+              </div> */}
+              <Button variant="ghost" size="sm" onClick={logout} className="flex items-center space-x-2 hover:bg-red-50 hover:text-red-600 transition-colors">
+                <LogOut className="h-4 w-4" />
+                <span className="hidden md:inline">Logout</span>
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* KPI Cards */}
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Enhanced KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="card-elevated card-hover">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-bold text-foreground-muted">Total Students</CardTitle>
-              <div className="p-2 bg-primary-light rounded-lg">
-                <GraduationCap className="h-4 w-4 text-primary" />
+          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+              <CardTitle className="text-sm font-semibold text-blue-100">Total Students</CardTitle>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <GraduationCap className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">{students.length}</div>
-              <p className="text-xs text-foreground-muted mt-1">
+            <CardContent className="relative">
+              <div className="text-3xl font-bold mb-1">{students.length}</div>
+              <p className="text-xs text-blue-100 flex items-center">
+                <UserCheck className="h-3 w-3 mr-1" />
                 {students.filter((s) => s.status === "present").length} present today
               </p>
             </CardContent>
           </Card>
 
-          <Card className="card-elevated card-hover">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-bold text-foreground-muted">Total Staff</CardTitle>
-              <div className="p-2 bg-primary-light rounded-lg">
-                <Users className="h-4 w-4 text-primary" />
+          <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+              <CardTitle className="text-sm font-semibold text-emerald-100">Total Staff</CardTitle>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Users className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">{staff.length}</div>
-              <p className="text-xs text-foreground-muted mt-1">
+            <CardContent className="relative">
+              <div className="text-3xl font-bold mb-1">{staff.length}</div>
+              <p className="text-xs text-emerald-100 flex items-center">
+                <UserCheck className="h-3 w-3 mr-1" />
                 {staff.filter((s) => s.status === "present").length} present today
               </p>
             </CardContent>
           </Card>
 
-          <Card className="card-elevated card-hover">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-bold text-foreground-muted">Today's Check-ins</CardTitle>
-              <div className="p-2 bg-success-light rounded-lg">
-                <BarChart3 className="h-4 w-4 text-success" />
+          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+              <CardTitle className="text-sm font-semibold text-purple-100">Today's Check-ins</CardTitle>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <BarChart3 className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-success">{todayCheckIns}</div>
-              <p className="text-xs text-foreground-muted mt-1">Total attendance records: {totalRecords}</p>
+            <CardContent className="relative">
+              <div className="text-3xl font-bold mb-1">{todayCheckIns}</div>
+              <p className="text-xs text-purple-100 flex items-center">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                {totalRecords} total records
+              </p>
             </CardContent>
           </Card>
+
+          {/* <Card className="relative overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-xl">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+              <CardTitle className="text-sm font-semibold text-orange-100">Active Sessions</CardTitle>
+              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <Clock className="h-5 w-5 text-white" />
+              </div>
+            </CardHeader>
+            <CardContent className="relative">
+              <div className="text-3xl font-bold mb-1">{todayCheckIns}</div>
+              <p className="text-xs text-orange-100 flex items-center">
+                <Settings className="h-3 w-3 mr-1" />
+                Currently active
+              </p>
+            </CardContent>
+          </Card> */}
         </div>
 
-        {/* Management Tabs */}
-        <Tabs defaultValue="students" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 p-1 bg-background-muted">
-            <TabsTrigger value="students" className="tab-header data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Students</TabsTrigger>
-            <TabsTrigger value="staff" className="tab-header data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Staff</TabsTrigger>
-            <TabsTrigger value="attendance" className="tab-header data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Attendance Overview</TabsTrigger>
-          </TabsList>
+        {/* Enhanced Management Tabs */}
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50">
+          <Tabs defaultValue="students" className="space-y-6 p-6">
+            <TabsList className="grid w-full grid-cols-3 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl border border-gray-200/50">
+              <TabsTrigger 
+                value="students" 
+                className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-blue-600 transition-all duration-200"
+              >
+                <GraduationCap className="h-4 w-4 mr-2" />
+                Students
+              </TabsTrigger>
+              <TabsTrigger 
+                value="staff" 
+                className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-emerald-600 transition-all duration-200"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Staff
+              </TabsTrigger>
+              <TabsTrigger 
+                value="attendance" 
+                className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-purple-600 transition-all duration-200"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Attendance
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Students Management */}
-          <TabsContent value="students" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold">Student Management</h3>
-              <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
-                <DialogTrigger asChild>
-                  <Button className="button-primary">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Student
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle className="font-bold">Add New Student</DialogTitle>
-                    <DialogDescription>Enter the student details below.</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="student-name" className="font-bold">Name</Label>
-                      <Input id="student-name" value={newStudent.name} onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} placeholder="Student name" />
-                    </div>
-                    <div>
-                      <Label htmlFor="student-email" className="font-bold">Email</Label>
-                      <Input id="student-email" type="email" value={newStudent.email} onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })} placeholder="student@nascomsoft.com" />
-                    </div>
-                    <div>
-                      <Label htmlFor="student-department" className="font-bold">Department</Label>
-                      <Input id="student-department" value={newStudent.department} onChange={(e) => setNewStudent({ ...newStudent, department: e.target.value })} placeholder="Computer Science" />
-                    </div>
-                    <div>
-                      <Label htmlFor="student-password" className="font-bold">Password</Label>
-                      <Input id="student-password" type="password" value={newStudent.password} onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })} placeholder="Default password" />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsAddStudentOpen(false)}>Cancel</Button>
-                    <Button onClick={addStudent} className="button-primary">Add Student</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-            
-            {/* Student Search */}
-            <div className="flex-1">
-              <Input 
-                placeholder="Search students by name, email, or department..." 
-                value={studentSearchTerm} 
-                onChange={(e) => setStudentSearchTerm(e.target.value)} 
-                className="max-w-sm border-gray-300" 
-              />
-            </div>
-
-            <Card className="shadow-lg border-0 rounded-2xl overflow-hidden">
-              <div className="max-h-96 overflow-y-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-white dark:bg-gray-800 z-10">
-                    <TableRow>
-                      <TableHead className="font-bold">Name</TableHead>
-                      <TableHead className="font-bold">Email</TableHead>
-                      <TableHead className="font-bold">Department</TableHead>
-                      <TableHead className="font-bold">Status</TableHead>
-                      <TableHead className="font-bold">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredStudents.map((student) => (
-                      <TableRow key={student.id}>
-                        <TableCell>{student.name}</TableCell>
-                        <TableCell>{student.email}</TableCell>
-                        <TableCell>{student.department}</TableCell>
-                        <TableCell>
-                          <Badge variant={student.status === "present" ? "default" : "secondary"} className={student.status === "present" ? "status-success" : ""}>
-                            {student.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <TooltipProvider>
-                            <div className="flex gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="sm" onClick={() => editStudent(student)} className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Edit Student</p></TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(student.id, student.name, 'student')} className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 transition-colors">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Delete Student</p></TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </TooltipProvider>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {filteredStudents.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {studentSearchTerm ? "No students found matching your search." : "No students found."}
-                  </div>
-                )}
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* Staff Management */}
-          <TabsContent value="staff" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold">Staff Management</h3>
-              <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
-                <DialogTrigger asChild>
-                  <Button className="button-primary button-enhanced">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Staff
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle className="font-bold">Add New Staff Member</DialogTitle>
-                    <DialogDescription>Enter the staff member details below.</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="staff-name" className="font-bold">Name</Label>
-                      <Input id="staff-name" value={newStaff.name} onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} placeholder="Staff name" />
-                    </div>
-                    <div>
-                      <Label htmlFor="staff-email" className="font-bold">Email</Label>
-                      <Input id="staff-email" type="email" value={newStaff.email} onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })} placeholder="staff@nascomsoft.com" />
-                    </div>
-                    <div>
-                      <Label htmlFor="staff-position" className="font-bold">Position</Label>
-                      <Input id="staff-position" value={newStaff.position || ""} onChange={(e) => setNewStaff({ ...newStaff, position: e.target.value })} placeholder="Senior Developer" />
-                    </div>
-                    <div>
-                      <Label htmlFor="staff-password" className="font-bold">Password</Label>
-                      <Input id="staff-password" type="password" value={newStaff.password} onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })} placeholder="Default password" />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsAddStaffOpen(false)}>Cancel</Button>
-                    <Button onClick={addStaff} className="button-primary">Add Staff</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-            
-            {/* Staff Search */}
-            <div className="flex-1">
-              <Input 
-                placeholder="Search staff by name, email, or position..." 
-                value={staffSearchTerm} 
-                onChange={(e) => setStaffSearchTerm(e.target.value)} 
-                className="max-w-sm border-gray-300" 
-              />
-            </div>
-
-            <Card className="shadow-lg border-0 rounded-2xl overflow-hidden">
-              <div className="max-h-96 overflow-y-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-white dark:bg-gray-800 z-10">
-                    <TableRow>
-                      <TableHead className="font-bold">Name</TableHead>
-                      <TableHead className="font-bold">Email</TableHead>
-                      <TableHead className="font-bold">Position</TableHead>
-                      <TableHead className="font-bold">Status</TableHead>
-                      <TableHead className="font-bold">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredStaff.map((member) => (
-                      <TableRow key={member.id}>
-                        <TableCell>{member.name}</TableCell>
-                        <TableCell>{member.email}</TableCell>
-                        <TableCell>{member.position || "_"}</TableCell>
-                        <TableCell>
-                          <Badge variant={member.status === "present" ? "default" : "secondary"} className={member.status === "present" ? "status-success" : ""}>
-                            {member.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <TooltipProvider>
-                            <div className="flex gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="sm" onClick={() => editStaff(member)} className="h-8 w-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Edit Staff Member</p></TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(member.id, member.name, 'staff')} className="h-8 w-8 p-0 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 transition-colors">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Delete Staff Member</p></TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </TooltipProvider>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {filteredStaff.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {staffSearchTerm ? "No staff members found matching your search." : "No staff members found."}
-                  </div>
-                )}
-              </div>
-            </Card>
-          </TabsContent>
-
-          {/* Attendance Overview */}
-          <TabsContent value="attendance" className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <h3 className="text-lg font-bold">Attendance Overview</h3>
-              <div className="flex gap-2">
-                <Button onClick={exportAttendance} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export {filteredAttendance.length > 0 && (attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all") 
-                    ? `Filtered (${filteredAttendance.length})` 
-                    : 'All'} CSV
-                </Button>
-              </div>
-            </div>
-
-            {/* Attendance Search and Filters */}
-            <div className="space-y-4">
-              {/* Name/Email Search and Role Filter on same line */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-                <div className="flex-1">
-                  <Input 
-                    placeholder="Search by name or email..." 
-                    value={attendanceSearchTerm} 
-                    onChange={(e) => setAttendanceSearchTerm(e.target.value)} 
-                    className="max-w-md border-gray-300" 
-                  />
+            {/* Students Management */}
+            <TabsContent value="students" className="space-y-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Student Management</h3>
+                  <p className="text-sm text-gray-600 mt-1">Manage student accounts and information</p>
                 </div>
-                <div className="flex gap-2">
-                  <Select value={filterRole} onValueChange={(value: any) => setFilterRole(value)}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Filter by role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Roles</SelectItem>
-                      <SelectItem value="staff">Staff</SelectItem>
-                      <SelectItem value="student">Student</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Student
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-bold">Add New Student</DialogTitle>
+                      <DialogDescription>Enter the student details below.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="student-name" className="text-sm font-semibold text-gray-700">Name</Label>
+                        <Input 
+                          id="student-name" 
+                          value={newStudent.name} 
+                          onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} 
+                          placeholder="Student name"
+                          className="mt-1 text-gray-600"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="student-email" className="text-sm font-semibold text-gray-700">Email</Label>
+                        <Input 
+                          id="student-email" 
+                          type="email" 
+                          value={newStudent.email} 
+                          onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })} 
+                          placeholder="student@nascomsoft.com"
+                          className="mt-1 text-gray-600"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="student-department" className="text-sm font-semibold text-gray-700">Department</Label>
+                        <Input 
+                          id="student-department" 
+                          value={newStudent.department} 
+                          onChange={(e) => setNewStudent({ ...newStudent, department: e.target.value })} 
+                          placeholder="Computer Science"
+                          className="mt-1 text-gray-600"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="student-password" className="text-sm font-semibold text-gray-700">Password</Label>
+                        <Input 
+                          id="student-password" 
+                          type="password" 
+                          value={newStudent.password} 
+                          onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })} 
+                          placeholder="Default password"
+                          className="mt-1 text-gray-600"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter className="pt-4">
+                      <Button variant="outline" onClick={() => setIsAddStudentOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={addStudent} 
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                      >
+                        Add Student
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
               
-              {/* Date Search - Single Day First */}
-              <div className="space-y-3 flex flex-col items-start">
-                <div className="flex gap-3 items-center">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <Label className="text-sm font-bold">Search by Date:</Label>
-                  <Input
-                    type="date"
-                    placeholder="Select specific date"
-                    value={attendanceDateFrom === attendanceDateTo ? attendanceDateFrom : ""}
-                    onChange={(e) => {
-                      const selectedDate = e.target.value;
-                      setAttendanceDateFrom(selectedDate);
-                      setAttendanceDateTo(selectedDate);
-                    }}
-                    className="w-40 font-bold"
-                  />
+              {/* Enhanced Student Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input 
+                  placeholder="Search students by name, email, or department..." 
+                  value={studentSearchTerm} 
+                  onChange={(e) => setStudentSearchTerm(e.target.value)} 
+                  className="pl-10 max-w-md text-gray-600 bg-white/80 backdrop-blur-sm border-gray-200/50 focus:border-blue-300 focus:ring-blue-200/50"
+                />
+              </div>
+
+              <Card className="shadow-xl border-0 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
+                <div className="max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-400/70">
+                      <TableRow className="border-gray-400/70">
+                        <TableHead className="font-semibold text-gray-700">Name</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Email</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Department</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudents.map((student) => (
+                        <TableRow key={student.id} className="border-gray-300/30 hover:bg-blue-100/30 transition-colors">
+                          <TableCell className="font-medium text-gray-600">{student.name}</TableCell>
+                          <TableCell className="text-gray-600">{student.email}</TableCell>
+                          <TableCell className="text-gray-600">{student.department}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={student.status === "present" ? "default" : "secondary"} 
+                              className={`${
+                                student.status === "present" 
+                                ? "bg-emerald-100 text-emerald-800 border-emerald-200" 
+                                : "bg-gray-100 text-gray-600 border-gray-200"
+                              } font-medium`}
+                            >
+                              {student.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <div className="flex gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => editStudent(student)} 
+                                      className="h-8 w-8 p-0 text-gray-900 hover:bg-blue-100 hover:text-blue-600 transition-colors rounded-lg"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Edit Student</p></TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => handleDeleteClick(student.id, student.name, 'student')} 
+                                      className="h-8 w-8 p-0 text-gray-900 hover:bg-red-100 hover:text-red-600 transition-colors rounded-lg"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Delete Student</p></TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </TooltipProvider>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {filteredStudents.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <GraduationCap className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium mb-2">No students found</p>
+                      <p className="text-sm">
+                        {studentSearchTerm ? "Try adjusting your search criteria." : "Add your first student to get started."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </TabsContent>
+
+            {/* Staff Management */}
+            <TabsContent value="staff" className="space-y-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Staff Management</h3>
+                  <p className="text-sm text-gray-600 mt-1">Manage staff accounts and information</p>
+                </div>
+                <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-lg hover:shadow-xl transition-all duration-200">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Staff
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-bold">Add New Staff Member</DialogTitle>
+                      <DialogDescription>Enter the staff member details below.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="staff-name" className="text-sm font-semibold text-gray-700">Name</Label>
+                        <Input 
+                          id="staff-name" 
+                          value={newStaff.name} 
+                          onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} 
+                          placeholder="Staff name"
+                          className="mt-1 text-gray-600"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="staff-email" className="text-sm font-semibold text-gray-700">Email</Label>
+                        <Input 
+                          id="staff-email" 
+                          type="email" 
+                          value={newStaff.email} 
+                          onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })} 
+                          placeholder="staff@nascomsoft.com"
+                          className="mt-1 text-gray-600"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="staff-position" className="text-sm font-semibold text-gray-700">Position</Label>
+                        <Input 
+                          id="staff-position" 
+                          value={newStaff.position || ""} 
+                          onChange={(e) => setNewStaff({ ...newStaff, position: e.target.value })} 
+                          placeholder="Senior Developer"
+                          className="mt-1 text-gray-600"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="staff-password" className="text-sm font-semibold text-gray-700">Password</Label>
+                        <Input 
+                          id="staff-password" 
+                          type="password" 
+                          value={newStaff.password} 
+                          onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })} 
+                          placeholder="Default password"
+                          className="mt-1 text-gray-600"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter className="pt-4">
+                      <Button variant="outline" onClick={() => setIsAddStaffOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={addStaff} 
+                        className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
+                      >
+                        Add Staff
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
+              {/* Enhanced Staff Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input 
+                  placeholder="Search staff by name, email, or position..." 
+                  value={staffSearchTerm} 
+                  onChange={(e) => setStaffSearchTerm(e.target.value)} 
+                  className="pl-10 max-w-md bg-white/80 backdrop-blur-sm border-gray-200/50 focus:border-emerald-300 focus:ring-emerald-200/50"
+                />
+              </div>
+
+              <Card className="shadow-xl border-0 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
+                <div className="max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-200/50">
+                      <TableRow className="border-gray-400/70">
+                        <TableHead className="font-semibold text-gray-700">Name</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Email</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Position</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStaff.map((member) => (
+                        <TableRow key={member.id} className="border-gray-300/30 hover:bg-emerald-50/30 transition-colors">
+                          <TableCell className="text-gray-600">{member.name}</TableCell>
+                          <TableCell className="text-gray-600">{member.email}</TableCell>
+                          <TableCell className="text-gray-600">{member.position || "_"}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={member.status === "present" ? "default" : "secondary"} 
+                              className={`${
+                                member.status === "present" 
+                                ? "bg-emerald-100 text-emerald-800 border-emerald-200" 
+                                : "bg-gray-100 text-gray-600 border-gray-200"
+                              } font-medium`}
+                            >
+                              {member.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <div className="flex gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => editStaff(member)} 
+                                      className="h-8 w-8 p-0 text-gray-900 hover:bg-emerald-100 hover:text-emerald-600 transition-colors rounded-lg"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Edit Staff Member</p></TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => handleDeleteClick(member.id, member.name, 'staff')} 
+                                      className="h-8 w-8 p-0 text-gray-900 hover:bg-red-100 hover:text-red-600 transition-colors rounded-lg"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Delete Staff Member</p></TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </TooltipProvider>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {filteredStaff.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium mb-2">No staff members found</p>
+                      <p className="text-sm">
+                        {staffSearchTerm ? "Try adjusting your search criteria." : "Add your first staff member to get started."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </TabsContent>
+
+            {/* Attendance Overview */}
+            <TabsContent value="attendance" className="space-y-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Attendance Overview</h3>
+                  <p className="text-sm text-gray-600 mt-1">Track and monitor attendance records</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={exportAttendance} 
+                    variant="outline" 
+                    className="bg-white/80 backdrop-blur-sm border-gray-200/50 hover:bg-white hover:shadow-md transition-all duration-200"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export {filteredAttendance.length > 0 && (attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all") 
+                      ? `Filtered (${filteredAttendance.length})` 
+                      : 'All'} CSV
+                  </Button>
+                </div>
+              </div>
+
+              {/* Enhanced Attendance Search and Filters */}
+              <div className="space-y-4 bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-white/50">
+                {/* Name/Email Search and Role Filter */}
+                <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input 
+                      placeholder="Search by name or email..." 
+                      value={attendanceSearchTerm} 
+                      onChange={(e) => setAttendanceSearchTerm(e.target.value)} 
+                      className="pl-10 max-w-md text-gray-600 bg-white/80 backdrop-blur-sm border-gray-200/50 focus:border-purple-300 focus:ring-purple-200/50"
+                    />
+                  </div>
+                  <div className="flex gap-3 items-center">
+                    <Filter className="h-4 w-4 text-gray-400" />
+                    <Select value={filterRole} onValueChange={(value: any) => setFilterRole(value)}>
+                      <SelectTrigger className="w-40 text-gray-600 bg-white/80 backdrop-blur-sm border-gray-200/50">
+                        <SelectValue placeholder="Filter by role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all" className="text-gray-600">All Roles</SelectItem>
+                        <SelectItem value="staff" className="text-gray-600">Staff</SelectItem>
+                        <SelectItem value="student" className="text-gray-600">Student</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 
-                {/* Custom Date Range */}
-                <div className="ml-1 flex items-center">
-                  <Label className="text-sm text-gray-600 pr-3">Or select custom range:</Label>
-                  <div className="flex gap-2 items-center">
+                {/* Enhanced Date Search */}
+                <div className="space-y-3">
+                  <div className="flex gap-3 items-center">
+                    <Calendar className="h-4 w-4 text-purple-500" />
+                    <Label className="text-sm font-semibold text-gray-700">Search by Date:</Label>
                     <Input
                       type="date"
-                      placeholder="From date"
-                      value={attendanceDateFrom}
-                      onChange={(e) => setAttendanceDateFrom(e.target.value)}
-                      className="w-40 font-bold"
-                    />
-                    <span className="text-sm text-gray-500 pr-1">to</span>
-                    <Input
-                      type="date"
-                      placeholder="To date"
-                      value={attendanceDateTo}
-                      onChange={(e) => setAttendanceDateTo(e.target.value)}
-                      className="w-40 font-bold"
+                      placeholder="Select specific date"
+                      value={attendanceDateFrom === attendanceDateTo ? attendanceDateFrom : ""}
+                      onChange={(e) => {
+                        const selectedDate = e.target.value;
+                        setAttendanceDateFrom(selectedDate);
+                        setAttendanceDateTo(selectedDate);
+                      }}
+                      className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50"
                     />
                   </div>
                   
-                  {/* Quick Date Range Buttons */}
-                  <div className="flex flex-wrap gap-2 pl-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setDateRange(1)}
-                      className="text-xs"
-                    >
-                      Last Month
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setDateRange(3)}
-                      className="text-xs"
-                    >
-                      Last 3 Months
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setDateRange(6)}
-                      className="text-xs"
-                    >
-                      Last 6 Months
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setDateRange(12)}
-                      className="text-xs"
-                    >
-                      Last Year
-                    </Button>
-                    {(attendanceDateFrom || attendanceDateTo) && (
+                  {/* Custom Date Range */}
+                  <div className="ml-7 flex flex-wrap items-center gap-3">
+                    <Label className="text-sm text-gray-600">Or select custom range:</Label>
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="date"
+                        placeholder="From date"
+                        value={attendanceDateFrom}
+                        onChange={(e) => setAttendanceDateFrom(e.target.value)}
+                        className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50"
+                      />
+                      <span className="text-sm text-gray-500">to</span>
+                      <Input
+                        type="date"
+                        placeholder="To date"
+                        value={attendanceDateTo}
+                        onChange={(e) => setAttendanceDateTo(e.target.value)}
+                        className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50"
+                      />
+                    </div>
+                    
+                    {/* Quick Date Range Buttons */}
+                    <div className="flex flex-wrap gap-2">
                       <Button 
-                        variant="ghost" 
+                        variant="outline" 
                         size="sm" 
-                        onClick={clearDateRange}
-                        className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => setDateRange(1)}
+                        className="text-xs bg-white/60 hover:bg-white border-gray-200/50"
                       >
-                        Clear Range
+                        Last Month
                       </Button>
-                    )}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setDateRange(3)}
+                        className="text-xs bg-white/60 hover:bg-white border-gray-200/50"
+                      >
+                        Last 3 Months
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setDateRange(6)}
+                        className="text-xs bg-white/60 hover:bg-white border-gray-200/50"
+                      >
+                        Last 6 Months
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setDateRange(12)}
+                        className="text-xs bg-white/60 hover:bg-white border-gray-200/50"
+                      >
+                        Last Year
+                      </Button>
+                      {(attendanceDateFrom || attendanceDateTo) && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={clearDateRange}
+                          className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          Clear Range
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <Card className="shadow-lg border-0 rounded-2xl overflow-hidden">
-              <div className="max-h-96 overflow-y-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-white dark:bg-gray-800 z-10">
-                    <TableRow>
-                      <TableHead className="font-bold">Name</TableHead>
-                      <TableHead className="font-bold">Role</TableHead>
-                      <TableHead className="font-bold">Email</TableHead>
-                      <TableHead className="font-bold">Date</TableHead>
-                      <TableHead className="font-bold">Check-in</TableHead>
-                      <TableHead className="font-bold">Check-out</TableHead>
-                      <TableHead className="font-bold">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredAttendance.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell>{record.userName}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {record.userRole}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{record.email}</TableCell>
-                        <TableCell>{record.date ? new Date(record.date).toLocaleDateString() : "-"}</TableCell>
-                        <TableCell>
-                          {record.checkIn ? new Date(record.checkIn).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {record.checkOut ? new Date(record.checkOut).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={record.status === "present" ? "default" : "destructive"} className={"status-success"}>
-                            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                          </Badge>
-                        </TableCell>
+              <Card className="shadow-xl border-0 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
+                <div className="max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-200/50">
+                      <TableRow className="border-gray-200/50">
+                        <TableHead className="font-semibold text-gray-700">Name</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Role</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Email</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Date</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Check-in</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Check-out</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {filteredAttendance.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all" 
-                      ? "No attendance records found matching your search criteria." 
-                      : "No attendance records found."
-                    }
-                  </div>
-                )}
-              </div>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAttendance.map((record) => (
+                        <TableRow key={record.id} className="border-gray-200/30 hover:bg-purple-50/30 transition-colors">
+                          <TableCell className="text-gray-600">{record.userName}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant="outline" 
+                              className={`capitalize ${
+                                record.userRole === 'staff' 
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700' 
+                                : 'border-blue-200 bg-blue-50 text-blue-700'
+                              }`}
+                            >
+                              {record.userRole}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-gray-600">{record.email}</TableCell>
+                          <TableCell className="text-gray-600">
+                            {record.date ? new Date(record.date).toLocaleDateString() : "-"}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {record.checkIn ? (
+                              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                {new Date(record.checkIn).toLocaleTimeString("en-US", { 
+                                  hour: "2-digit", 
+                                  minute: "2-digit", 
+                                  hour12: true 
+                                })}
+                              </span>
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {record.checkOut ? (
+                              <span className="inline-flex items-center px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                                {new Date(record.checkOut).toLocaleTimeString("en-US", { 
+                                  hour: "2-digit", 
+                                  minute: "2-digit", 
+                                  hour12: true 
+                                })}
+                              </span>
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={record.status === "present" ? "default" : "destructive"} 
+                              className={`${
+                                record.status === "present" 
+                                ? "bg-emerald-100 text-emerald-800 border-emerald-200" 
+                                : "bg-red-100 text-red-800 border-red-200"
+                              } font-medium`}
+                            >
+                              {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {filteredAttendance.length === 0 && (
+                    <div className="text-center py-12 text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium mb-2">No attendance records found</p>
+                      <p className="text-sm">
+                        {attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all" 
+                          ? "Try adjusting your search criteria or date range." 
+                          : "Attendance records will appear here once users check in."
+                        }
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="sm:max-w-md">
             <AlertDialogHeader>
-              <AlertDialogTitle className="font-bold">Are you sure you want to delete this {deleteTarget?.type}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                You are about to delete <strong>{deleteTarget?.name}</strong>. This action cannot be undone and will permanently remove the {deleteTarget?.type} from the system.
+              <AlertDialogTitle className="text-xl font-bold text-red-600">
+                Delete {deleteTarget?.type === 'staff' ? 'Staff Member' : 'Student'}?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-600">
+                You are about to permanently delete <span className="font-semibold">{deleteTarget?.name}</span>. 
+                This action cannot be undone and will remove all associated data.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={handleDeleteCancel}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel onClick={handleDeleteCancel} className="border-gray-300">
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteConfirm}
-                className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:ring-red-500 text-white"
               >
                 Delete {deleteTarget?.type === 'staff' ? 'Staff Member' : 'Student'}
               </AlertDialogAction>
@@ -1199,56 +1428,108 @@ export function AdminDashboard() {
 
         {/* Edit Student Dialog */}
         <Dialog open={isEditStudentOpen} onOpenChange={setIsEditStudentOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="font-bold">Edit Student</DialogTitle>
+              <DialogTitle className="text-xl font-bold">Edit Student</DialogTitle>
               <DialogDescription>Update the student details below.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-student-name" className="font-bold">Name</Label>
-                <Input id="edit-student-name" value={editStudentForm.name} onChange={(e) => setEditStudentForm({ ...editStudentForm, name: e.target.value })} placeholder="Student name" />
+                <Label htmlFor="edit-student-name" className="text-sm font-semibold text-gray-700">Name</Label>
+                <Input 
+                  id="edit-student-name" 
+                  value={editStudentForm.name} 
+                  onChange={(e) => setEditStudentForm({ ...editStudentForm, name: e.target.value })} 
+                  placeholder="Student name"
+                  className="mt-1"
+                />
               </div>
               <div>
-                <Label htmlFor="edit-student-email" className="font-bold">Email</Label>
-                <Input id="edit-student-email" type="email" value={editStudentForm.email} onChange={(e) => setEditStudentForm({ ...editStudentForm, email: e.target.value })} placeholder="student@nascomsoft.com" />
+                <Label htmlFor="edit-student-email" className="text-sm font-semibold text-gray-700">Email</Label>
+                <Input 
+                  id="edit-student-email" 
+                  type="email" 
+                  value={editStudentForm.email} 
+                  onChange={(e) => setEditStudentForm({ ...editStudentForm, email: e.target.value })} 
+                  placeholder="student@nascomsoft.com"
+                  className="mt-1"
+                />
               </div>
               <div>
-                <Label htmlFor="edit-student-department" className="font-bold">Department</Label>
-                <Input id="edit-student-department" value={editStudentForm.department} onChange={(e) => setEditStudentForm({ ...editStudentForm, department: e.target.value })} placeholder="Computer Science" />
+                <Label htmlFor="edit-student-department" className="text-sm font-semibold text-gray-700">Department</Label>
+                <Input 
+                  id="edit-student-department" 
+                  value={editStudentForm.department} 
+                  onChange={(e) => setEditStudentForm({ ...editStudentForm, department: e.target.value })} 
+                  placeholder="Computer Science"
+                  className="mt-1"
+                />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditStudentOpen(false)}>Cancel</Button>
-              <Button onClick={updateStudent} className="button-primary">Save Changes</Button>
+            <DialogFooter className="pt-4">
+              <Button variant="outline" onClick={() => setIsEditStudentOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={updateStudent} 
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+              >
+                Save Changes
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* Edit Staff Dialog */}
         <Dialog open={isEditStaffOpen} onOpenChange={setIsEditStaffOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="font-bold">Edit Staff Member</DialogTitle>
+              <DialogTitle className="text-xl font-bold">Edit Staff Member</DialogTitle>
               <DialogDescription>Update the staff member details below.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-staff-name" className="font-bold">Name</Label>
-                <Input id="edit-staff-name" value={editStaffForm.name} onChange={(e) => setEditStaffForm({ ...editStaffForm, name: e.target.value })} placeholder="Staff name" />
+                <Label htmlFor="edit-staff-name" className="text-sm font-semibold text-gray-700">Name</Label>
+                <Input 
+                  id="edit-staff-name" 
+                  value={editStaffForm.name} 
+                  onChange={(e) => setEditStaffForm({ ...editStaffForm, name: e.target.value })} 
+                  placeholder="Staff name"
+                  className="mt-1"
+                />
               </div>
               <div>
-                <Label htmlFor="edit-staff-email" className="font-bold">Email</Label>
-                <Input id="edit-staff-email" type="email" value={editStaffForm.email} onChange={(e) => setEditStaffForm({ ...editStaffForm, email: e.target.value })} placeholder="staff@nascomsoft.com" />
+                <Label htmlFor="edit-staff-email" className="text-sm font-semibold text-gray-700">Email</Label>
+                <Input 
+                  id="edit-staff-email" 
+                  type="email" 
+                  value={editStaffForm.email} 
+                  onChange={(e) => setEditStaffForm({ ...editStaffForm, email: e.target.value })} 
+                  placeholder="staff@nascomsoft.com"
+                  className="mt-1"
+                />
               </div>
               <div>
-                <Label htmlFor="edit-staff-position" className="font-bold">Position</Label>
-                <Input id="edit-staff-position" value={editStaffForm.position} onChange={(e) => setEditStaffForm({ ...editStaffForm, position: e.target.value })} placeholder="Senior Developer" />
+                <Label htmlFor="edit-staff-position" className="text-sm font-semibold text-gray-700">Position</Label>
+                <Input 
+                  id="edit-staff-position" 
+                  value={editStaffForm.position} 
+                  onChange={(e) => setEditStaffForm({ ...editStaffForm, position: e.target.value })} 
+                  placeholder="Senior Developer"
+                  className="mt-1"
+                />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditStaffOpen(false)}>Cancel</Button>
-              <Button onClick={updateStaff} className="button-primary">Save Changes</Button>
+            <DialogFooter className="pt-4">
+              <Button variant="outline" onClick={() => setIsEditStaffOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={updateStaff} 
+                className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
+              >
+                Save Changes
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
