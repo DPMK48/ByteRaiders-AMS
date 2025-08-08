@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo} from "react";
 import { io } from "socket.io-client";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -53,9 +53,7 @@ import {
   Search,
   Filter,
   UserCheck,
-  Clock,
   TrendingUp,
-  Settings,
   FileText,
   Shield,
 } from "lucide-react";
@@ -77,7 +75,7 @@ interface StaffMember {
   email: string;
   position: string;
   status: "present" | "absent";
-  __ts?: number; 
+  __ts?: number;
 }
 
 interface Student {
@@ -86,7 +84,7 @@ interface Student {
   email: string;
   department: string;
   status: "present" | "absent";
-  __ts?: number; 
+  __ts?: number;
 }
 
 interface AttendanceRecord {
@@ -110,22 +108,22 @@ export function AdminDashboard() {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [isEditStaffOpen, setIsEditStaffOpen] = useState(false);
   const [isEditStudentOpen, setIsEditStudentOpen] = useState(false);
-  
+
   // Delete confirmation dialog states
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     name: string;
-    type: 'staff' | 'student';
+    type: "staff" | "student";
   } | null>(null);
-  
+
   // Separate search states for each section
   const [studentSearchTerm, setStudentSearchTerm] = useState("");
   const [staffSearchTerm, setStaffSearchTerm] = useState("");
   const [attendanceSearchTerm, setAttendanceSearchTerm] = useState("");
   const [attendanceDateFrom, setAttendanceDateFrom] = useState("");
   const [attendanceDateTo, setAttendanceDateTo] = useState("");
-  
+
   const [filterRole, setFilterRole] = useState<"all" | UserRole>("all");
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -168,7 +166,8 @@ export function AdminDashboard() {
     overview.forEach((r) => {
       const recKey = recordDateKey(r.date);
       if (recKey === todayKey && r.checkIn) {
-        if (r.email) presentByEmail.set(String(r.email).toLowerCase(), "present");
+        if (r.email)
+          presentByEmail.set(String(r.email).toLowerCase(), "present");
         if (r.userId) presentByUserId.set(String(r.userId), "present");
       }
     });
@@ -208,9 +207,12 @@ export function AdminDashboard() {
             headers: { Authorization: `Bearer ${token}` },
           }),
           // ask server for today's overview if supported
-          fetch(`${import.meta.env.VITE_API_URL}/attendance/overview?date=${date}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          fetch(
+            `${import.meta.env.VITE_API_URL}/attendance/overview?date=${date}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ),
         ]);
 
         if (![staffRes, studentsRes, overviewRes].every((r) => r.ok)) {
@@ -240,11 +242,11 @@ export function AdminDashboard() {
             const timestamp = checkIn
               ? new Date(checkIn).getTime()
               : dateVal
-              ? new Date(dateVal).getTime()
-              : Date.now();
+                ? new Date(dateVal).getTime()
+                : Date.now();
 
             return {
-              id: r._id ?? r.id ?? `${(r.email ?? "unknown")}-${timestamp}`,
+              id: r._id ?? r.id ?? `${r.email ?? "unknown"}-${timestamp}`,
               userId: r.userId ?? r.user?._id ?? r.user?.id ?? null,
               userName:
                 r.name ??
@@ -264,22 +266,29 @@ export function AdminDashboard() {
 
         const formattedStaff: StaffMember[] = Array.isArray(staffData)
           ? staffData.map((s: any) => ({
-              id: s._id,
-              name: s.name,
-              email: (s.email ?? "").toLowerCase(),
-              position: s.position ?? "",
-              status: "absent",
-            }))
+            id: s._id,
+            name: s.name,
+            email: (s.email ?? "").toLowerCase(),
+            position: s.position ?? "",
+            status: "absent",
+            __ts:
+              s.__ts ?? s.createdAt
+                ? new Date(s.createdAt).getTime()
+                : Date.now(), // Add this
+          }))
           : [];
-
         const formattedStudents: Student[] = Array.isArray(studentsData)
           ? studentsData.map((s: any) => ({
-              id: s._id,
-              name: s.name,
-              email: (s.email ?? "").toLowerCase(),
-              department: s.department ?? "",
-              status: "absent",
-            }))
+            id: s._id,
+            name: s.name,
+            email: (s.email ?? "").toLowerCase(),
+            department: s.department ?? "",
+            status: "absent",
+            __ts:
+              s.__ts ?? s.createdAt
+                ? new Date(s.createdAt).getTime()
+                : Date.now(), // Add this
+          }))
           : [];
 
         setStaff(formattedStaff);
@@ -306,7 +315,8 @@ export function AdminDashboard() {
 
     console.log("VITE_SOCKET_URL =", import.meta.env.VITE_SOCKET_URL);
 
-    const socketBase = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+    const socketBase =
+      import.meta.env.VITE_SOCKET_URL || window.location.origin;
 
     try {
       const socket = io(socketBase, {
@@ -322,14 +332,25 @@ export function AdminDashboard() {
 
       socket.on("attendanceUpdated", (payload: any) => {
         // Normalize payload (make email lowercase)
-        const checkIn = payload.checkIn ?? payload.checkInTime ?? payload.inTime ?? null;
-        const checkOut = payload.checkOut ?? payload.checkOutTime ?? payload.outTime ?? null;
-        const dateVal = payload.date ?? payload.attendanceDate ?? payload.createdAt ?? null;
-        const timestamp = checkIn ? new Date(checkIn).getTime() : dateVal ? new Date(dateVal).getTime() : Date.now();
+        const checkIn =
+          payload.checkIn ?? payload.checkInTime ?? payload.inTime ?? null;
+        const checkOut =
+          payload.checkOut ?? payload.checkOutTime ?? payload.outTime ?? null;
+        const dateVal =
+          payload.date ?? payload.attendanceDate ?? payload.createdAt ?? null;
+        const timestamp = checkIn
+          ? new Date(checkIn).getTime()
+          : dateVal
+            ? new Date(dateVal).getTime()
+            : Date.now();
 
         const incoming: AttendanceRecord = {
-          id: payload._id ?? payload.id ?? `${(payload.email ?? "unknown")}-${timestamp}`,
-          userId: payload.userId ?? payload.user?._id ?? payload.user?.id ?? null,
+          id:
+            payload._id ??
+            payload.id ??
+            `${payload.email ?? "unknown"}-${timestamp}`,
+          userId:
+            payload.userId ?? payload.user?._id ?? payload.user?.id ?? null,
           userName:
             payload.name ??
             payload.user?.name ??
@@ -351,16 +372,28 @@ export function AdminDashboard() {
             const rDateKey = recordDateKey(r.date);
             // if both have userId, match by that
             if (incoming.userId && r.userId) {
-              return String(r.userId) === String(incoming.userId) && rDateKey === incomingDateKey;
+              return (
+                String(r.userId) === String(incoming.userId) &&
+                rDateKey === incomingDateKey
+              );
             }
             // else match by email
-            return r.email && incoming.email && String(r.email).toLowerCase() === String(incoming.email).toLowerCase() && rDateKey === incomingDateKey;
+            return (
+              r.email &&
+              incoming.email &&
+              String(r.email).toLowerCase() ===
+              String(incoming.email).toLowerCase() &&
+              rDateKey === incomingDateKey
+            );
           });
 
           let updated;
           if (findMatchIndex >= 0) {
             updated = [...prev];
-            updated[findMatchIndex] = { ...updated[findMatchIndex], ...incoming };
+            updated[findMatchIndex] = {
+              ...updated[findMatchIndex],
+              ...incoming,
+            };
           } else {
             updated = [incoming, ...prev];
           }
@@ -397,7 +430,9 @@ export function AdminDashboard() {
 
   const recordDateKey = (dateStr?: string | Date | null) =>
     dateStr
-      ? new Date(dateStr).toLocaleDateString("en-CA", { timeZone: "Africa/Lagos" })
+      ? new Date(dateStr).toLocaleDateString("en-CA", {
+        timeZone: "Africa/Lagos",
+      })
       : null;
 
   const sortOverview = (arr: AttendanceRecord[]) =>
@@ -415,7 +450,11 @@ export function AdminDashboard() {
   //
   // Delete confirmation handlers
   //
-  const handleDeleteClick = (id: string, name: string, type: 'staff' | 'student') => {
+  const handleDeleteClick = (
+    id: string,
+    name: string,
+    type: "staff" | "student"
+  ) => {
     setDeleteTarget({ id, name, type });
     setDeleteConfirmOpen(true);
   };
@@ -425,14 +464,17 @@ export function AdminDashboard() {
 
     try {
       const token = localStorage.getItem("nascomsoft-token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${deleteTarget.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/users/${deleteTarget.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       if (!res.ok) throw new Error("Delete failed");
 
-      if (deleteTarget.type === 'staff') {
+      if (deleteTarget.type === "staff") {
         setStaff((prev) => prev.filter((s) => s.id !== deleteTarget.id));
         toast.success("Staff member deleted successfully");
       } else {
@@ -457,18 +499,29 @@ export function AdminDashboard() {
   // Add / Edit operations
   //
   const addStaff = async () => {
-    if (!newStaff.name || !newStaff.email || !newStaff.position || !newStaff.password) {
+    if (
+      !newStaff.name ||
+      !newStaff.email ||
+      !newStaff.position ||
+      !newStaff.password
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     try {
       const token = localStorage.getItem("nascomsoft-token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register/staff`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(newStaff),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/register/staff`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(newStaff),
+        }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to add staff");
 
@@ -478,6 +531,7 @@ export function AdminDashboard() {
         email: (data.user.email ?? "").toLowerCase(),
         position: data.user.position ?? "",
         status: "absent",
+        __ts: Date.now(), // Add this line
       };
 
       setStaff((prev) => [staffMember, ...prev]);
@@ -490,17 +544,28 @@ export function AdminDashboard() {
   };
 
   const addStudent = async () => {
-    if (!newStudent.name || !newStudent.email || !newStudent.department || !newStudent.password) {
+    if (
+      !newStudent.name ||
+      !newStudent.email ||
+      !newStudent.department ||
+      !newStudent.password
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
     try {
       const token = localStorage.getItem("nascomsoft-token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register/student`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(newStudent),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/register/student`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(newStudent),
+        }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to add student");
 
@@ -510,6 +575,7 @@ export function AdminDashboard() {
         email: (data.user.email ?? "").toLowerCase(),
         department: data.user.department ?? "",
         status: "absent",
+        __ts: Date.now(), // Add this line
       };
 
       setStudents((prev) => [student, ...prev]);
@@ -542,24 +608,37 @@ export function AdminDashboard() {
   };
 
   const updateStaff = async () => {
-    if (!editingStaff || !editStaffForm.name || !editStaffForm.email || !editStaffForm.position) {
+    if (
+      !editingStaff ||
+      !editStaffForm.name ||
+      !editStaffForm.email ||
+      !editStaffForm.position
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     try {
       const token = localStorage.getItem("nascomsoft-token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${editingStaff.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(editStaffForm),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/users/${editingStaff.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(editStaffForm),
+        }
+      );
 
       if (!res.ok) throw new Error("Failed to update staff");
       const updatedRes = await res.json();
       const updatedUser = updatedRes.user ?? updatedRes;
 
-      const updatedStaff = staff.map((s) => (s.id === editingStaff.id ? { ...s, ...updatedUser } : s));
+      const updatedStaff = staff.map((s) =>
+        s.id === editingStaff.id ? { ...s, ...updatedUser } : s
+      );
       setStaff(updatedStaff);
       setIsEditStaffOpen(false);
       setEditingStaff(null);
@@ -571,23 +650,36 @@ export function AdminDashboard() {
   };
 
   const updateStudent = async () => {
-    if (!editingStudent || !editStudentForm.name || !editStudentForm.email || !editStudentForm.department) {
+    if (
+      !editingStudent ||
+      !editStudentForm.name ||
+      !editStudentForm.email ||
+      !editStudentForm.department
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
     try {
       const token = localStorage.getItem("nascomsoft-token");
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/users/${editingStudent.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(editStudentForm),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/users/${editingStudent.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(editStudentForm),
+        }
+      );
 
       if (!res.ok) throw new Error("Failed to update student");
       const updatedRes = await res.json();
       const updatedUser = updatedRes.user ?? updatedRes;
 
-      const updatedStudents = students.map((s) => (s.id === editingStudent.id ? { ...s, ...updatedUser } : s));
+      const updatedStudents = students.map((s) =>
+        s.id === editingStudent.id ? { ...s, ...updatedUser } : s
+      );
       setStudents(updatedStudents);
       setIsEditStudentOpen(false);
       setEditingStudent(null);
@@ -602,8 +694,9 @@ export function AdminDashboard() {
   // Export (CSV) - uses filtered attendance data
   //
   const exportAttendance = () => {
-    const dataToExport = filteredAttendance.length > 0 ? filteredAttendance : attendanceOverview;
-    
+    const dataToExport =
+      filteredAttendance.length > 0 ? filteredAttendance : attendanceOverview;
+
     const csvContent = [
       ["Name", "Role", "Email", "Date", "Check-in", "Check-out", "Status"],
       ...dataToExport.map((record) => [
@@ -623,13 +716,18 @@ export function AdminDashboard() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    
+
     let filename = `attendance-${new Date().toISOString().split("T")[0]}`;
-    if (attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all") {
+    if (
+      attendanceSearchTerm ||
+      attendanceDateFrom ||
+      attendanceDateTo ||
+      filterRole !== "all"
+    ) {
       filename += "-filtered";
     }
     filename += ".csv";
-    
+
     a.download = filename;
     a.click();
     window.URL.revokeObjectURL(url);
@@ -640,7 +738,7 @@ export function AdminDashboard() {
     const today = new Date();
     const fromDate = new Date(today);
     fromDate.setMonth(today.getMonth() - months);
-    
+
     setAttendanceDateFrom(fromDate.toISOString().split("T")[0]);
     setAttendanceDateTo(today.toISOString().split("T")[0]);
   };
@@ -654,44 +752,61 @@ export function AdminDashboard() {
   // Filtering / search with separate search terms for each section
   //
   const filteredStudents = useMemo(() => {
-    return students.filter((student) => {
-      const matchesSearch =
-        student.name?.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
-        student.email?.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
-        student.department?.toLowerCase().includes(studentSearchTerm.toLowerCase());
-      return matchesSearch;
-    });
+    return students
+      .filter((student) => {
+        const matchesSearch =
+          student.name
+            ?.toLowerCase()
+            .includes(studentSearchTerm.toLowerCase()) ||
+          student.email
+            ?.toLowerCase()
+            .includes(studentSearchTerm.toLowerCase()) ||
+          student.department
+            ?.toLowerCase()
+            .includes(studentSearchTerm.toLowerCase());
+        return matchesSearch;
+      })
+      .sort((a, b) => (b.__ts ?? 0) - (a.__ts ?? 0));
   }, [students, studentSearchTerm]);
 
   const filteredStaff = useMemo(() => {
-    return staff.filter((member) => {
-      const matchesSearch =
-        member.name?.toLowerCase().includes(staffSearchTerm.toLowerCase()) ||
-        member.email?.toLowerCase().includes(staffSearchTerm.toLowerCase()) ||
-        member.position?.toLowerCase().includes(staffSearchTerm.toLowerCase());
-      return matchesSearch;
-    });
+    return staff
+      .filter((member) => {
+        const matchesSearch =
+          member.name?.toLowerCase().includes(staffSearchTerm.toLowerCase()) ||
+          member.email?.toLowerCase().includes(staffSearchTerm.toLowerCase()) ||
+          member.position
+            ?.toLowerCase()
+            .includes(staffSearchTerm.toLowerCase());
+        return matchesSearch;
+      })
+      .sort((a, b) => (b.__ts ?? 0) - (a.__ts ?? 0));
   }, [staff, staffSearchTerm]);
 
   const filteredAttendance = useMemo(() => {
     return attendanceOverview.filter((record) => {
       const matchesSearch =
-        record.userName?.toLowerCase().includes(attendanceSearchTerm.toLowerCase()) ||
-        record.email?.toLowerCase().includes(attendanceSearchTerm.toLowerCase());
-      
-      const matchesRole = filterRole === "all" || record.userRole === filterRole;
-      
+        record.userName
+          ?.toLowerCase()
+          .includes(attendanceSearchTerm.toLowerCase()) ||
+        record.email
+          ?.toLowerCase()
+          .includes(attendanceSearchTerm.toLowerCase());
+
+      const matchesRole =
+        filterRole === "all" || record.userRole === filterRole;
+
       let matchesDateRange = true;
       if (attendanceDateFrom || attendanceDateTo) {
         const recordDate = recordDateKey(record.date);
         if (recordDate) {
           const recordDateObj = new Date(recordDate);
-          
+
           if (attendanceDateFrom) {
             const fromDate = new Date(attendanceDateFrom);
             matchesDateRange = matchesDateRange && recordDateObj >= fromDate;
           }
-          
+
           if (attendanceDateTo) {
             const toDate = new Date(attendanceDateTo);
             toDate.setHours(23, 59, 59, 999);
@@ -699,10 +814,16 @@ export function AdminDashboard() {
           }
         }
       }
-      
+
       return matchesSearch && matchesRole && matchesDateRange;
     });
-  }, [attendanceOverview, attendanceSearchTerm, filterRole, attendanceDateFrom, attendanceDateTo]);
+  }, [
+    attendanceOverview,
+    attendanceSearchTerm,
+    filterRole,
+    attendanceDateFrom,
+    attendanceDateTo,
+  ]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
@@ -719,7 +840,12 @@ export function AdminDashboard() {
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                     Admin Dashboard
                   </h1>
-                  <p className="text-sm text-gray-600">Welcome back, <span className="font-semibold text-blue-600">{user?.name}</span></p>
+                  <p className="text-sm text-gray-600">
+                    Welcome back,{" "}
+                    <span className="font-semibold text-blue-600">
+                      {user?.name}
+                    </span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -729,7 +855,12 @@ export function AdminDashboard() {
                 <Clock className="h-4 w-4 text-gray-500" />
                 <span className="text-sm text-gray-600">{new Date().toLocaleTimeString()}</span>
               </div> */}
-              <Button variant="ghost" size="sm" onClick={logout} className="flex items-center space-x-2 hover:bg-red-50 hover:text-red-600 transition-colors">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                className="flex items-center space-x-2 hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden md:inline">Logout</span>
               </Button>
@@ -744,7 +875,9 @@ export function AdminDashboard() {
           <Card className="relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-              <CardTitle className="text-sm font-semibold text-blue-100">Total Students</CardTitle>
+              <CardTitle className="text-sm font-semibold text-blue-100">
+                Total Students
+              </CardTitle>
               <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                 <GraduationCap className="h-5 w-5 text-white" />
               </div>
@@ -753,7 +886,8 @@ export function AdminDashboard() {
               <div className="text-3xl font-bold mb-1">{students.length}</div>
               <p className="text-xs text-blue-100 flex items-center">
                 <UserCheck className="h-3 w-3 mr-1" />
-                {students.filter((s) => s.status === "present").length} present today
+                {students.filter((s) => s.status === "present").length} present
+                today
               </p>
             </CardContent>
           </Card>
@@ -761,7 +895,9 @@ export function AdminDashboard() {
           <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl">
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-              <CardTitle className="text-sm font-semibold text-emerald-100">Total Staff</CardTitle>
+              <CardTitle className="text-sm font-semibold text-emerald-100">
+                Total Staff
+              </CardTitle>
               <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                 <Users className="h-5 w-5 text-white" />
               </div>
@@ -770,7 +906,8 @@ export function AdminDashboard() {
               <div className="text-3xl font-bold mb-1">{staff.length}</div>
               <p className="text-xs text-emerald-100 flex items-center">
                 <UserCheck className="h-3 w-3 mr-1" />
-                {staff.filter((s) => s.status === "present").length} present today
+                {staff.filter((s) => s.status === "present").length} present
+                today
               </p>
             </CardContent>
           </Card>
@@ -778,7 +915,9 @@ export function AdminDashboard() {
           <Card className="relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl">
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-              <CardTitle className="text-sm font-semibold text-purple-100">Today's Check-ins</CardTitle>
+              <CardTitle className="text-sm font-semibold text-purple-100">
+                Today's Check-ins
+              </CardTitle>
               <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                 <BarChart3 className="h-5 w-5 text-white" />
               </div>
@@ -814,22 +953,22 @@ export function AdminDashboard() {
         <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50">
           <Tabs defaultValue="students" className="space-y-6 p-6">
             <TabsList className="grid w-full grid-cols-3 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl border border-gray-200/50">
-              <TabsTrigger 
-                value="students" 
+              <TabsTrigger
+                value="students"
                 className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-blue-600 transition-all duration-200"
               >
                 <GraduationCap className="h-4 w-4 mr-2" />
                 Students
               </TabsTrigger>
-              <TabsTrigger 
-                value="staff" 
+              <TabsTrigger
+                value="staff"
                 className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-emerald-600 transition-all duration-200"
               >
                 <Users className="h-4 w-4 mr-2" />
                 Staff
               </TabsTrigger>
-              <TabsTrigger 
-                value="attendance" 
+              <TabsTrigger
+                value="attendance"
                 className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-purple-600 transition-all duration-200"
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
@@ -841,10 +980,17 @@ export function AdminDashboard() {
             <TabsContent value="students" className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Student Management</h3>
-                  <p className="text-sm text-gray-600 mt-1">Manage student accounts and information</p>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Student Management
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Manage student accounts and information
+                  </p>
                 </div>
-                <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
+                <Dialog
+                  open={isAddStudentOpen}
+                  onOpenChange={setIsAddStudentOpen}
+                >
                   <DialogTrigger asChild>
                     <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200">
                       <Plus className="h-4 w-4 mr-2" />
@@ -853,59 +999,106 @@ export function AdminDashboard() {
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                      <DialogTitle className="text-xl font-bold">Add New Student</DialogTitle>
-                      <DialogDescription>Enter the student details below.</DialogDescription>
+                      <DialogTitle className="text-xl font-bold">
+                        Add New Student
+                      </DialogTitle>
+                      <DialogDescription>
+                        Enter the student details below.
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="student-name" className="text-sm font-semibold text-gray-700">Name</Label>
-                        <Input 
-                          id="student-name" 
-                          value={newStudent.name} 
-                          onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} 
+                        <Label
+                          htmlFor="student-name"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Name
+                        </Label>
+                        <Input
+                          id="student-name"
+                          value={newStudent.name}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              name: e.target.value,
+                            })
+                          }
                           placeholder="Student name"
                           className="mt-1 text-gray-600"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="student-email" className="text-sm font-semibold text-gray-700">Email</Label>
-                        <Input 
-                          id="student-email" 
-                          type="email" 
-                          value={newStudent.email} 
-                          onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })} 
+                        <Label
+                          htmlFor="student-email"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Email
+                        </Label>
+                        <Input
+                          id="student-email"
+                          type="email"
+                          value={newStudent.email}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              email: e.target.value,
+                            })
+                          }
                           placeholder="student@nascomsoft.com"
                           className="mt-1 text-gray-600"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="student-department" className="text-sm font-semibold text-gray-700">Department</Label>
-                        <Input 
-                          id="student-department" 
-                          value={newStudent.department} 
-                          onChange={(e) => setNewStudent({ ...newStudent, department: e.target.value })} 
+                        <Label
+                          htmlFor="student-department"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Department
+                        </Label>
+                        <Input
+                          id="student-department"
+                          value={newStudent.department}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              department: e.target.value,
+                            })
+                          }
                           placeholder="Computer Science"
                           className="mt-1 text-gray-600"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="student-password" className="text-sm font-semibold text-gray-700">Password</Label>
-                        <Input 
-                          id="student-password" 
-                          type="password" 
-                          value={newStudent.password} 
-                          onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })} 
+                        <Label
+                          htmlFor="student-password"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Password
+                        </Label>
+                        <Input
+                          id="student-password"
+                          type="password"
+                          value={newStudent.password}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              password: e.target.value,
+                            })
+                          }
                           placeholder="Default password"
                           className="mt-1 text-gray-600"
                         />
                       </div>
                     </div>
                     <DialogFooter className="pt-4">
-                      <Button variant="outline" onClick={() => setIsAddStudentOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsAddStudentOpen(false)}
+                      >
                         Cancel
                       </Button>
-                      <Button 
-                        onClick={addStudent} 
+                      <Button
+                        onClick={addStudent}
                         className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                       >
                         Add Student
@@ -914,14 +1107,14 @@ export function AdminDashboard() {
                   </DialogContent>
                 </Dialog>
               </div>
-              
+
               {/* Enhanced Student Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input 
-                  placeholder="Search students by name, email, or department..." 
-                  value={studentSearchTerm} 
-                  onChange={(e) => setStudentSearchTerm(e.target.value)} 
+                <Input
+                  placeholder="Search students by name, email, or department..."
+                  value={studentSearchTerm}
+                  onChange={(e) => setStudentSearchTerm(e.target.value)}
                   className="pl-10 max-w-md text-gray-600 bg-white/80 backdrop-blur-sm border-gray-200/50 focus:border-blue-300 focus:ring-blue-200/50"
                 />
               </div>
@@ -931,27 +1124,49 @@ export function AdminDashboard() {
                   <Table>
                     <TableHeader className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-400/70">
                       <TableRow className="border-gray-400/70">
-                        <TableHead className="font-semibold text-gray-700">Name</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Email</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Department</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Actions</TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Name
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Email
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Department
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Status
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredStudents.map((student) => (
-                        <TableRow key={student.id} className="border-gray-300/30 hover:bg-blue-100/30 transition-colors">
-                          <TableCell className="font-medium text-gray-600">{student.name}</TableCell>
-                          <TableCell className="text-gray-600">{student.email}</TableCell>
-                          <TableCell className="text-gray-600">{student.department}</TableCell>
+                        <TableRow
+                          key={student.id}
+                          className="border-gray-300/30 hover:bg-blue-100/30 transition-colors"
+                        >
+                          <TableCell className="font-medium text-gray-600">
+                            {student.name}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {student.email}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {student.department}
+                          </TableCell>
                           <TableCell>
-                            <Badge 
-                              variant={student.status === "present" ? "default" : "secondary"} 
-                              className={`${
-                                student.status === "present" 
-                                ? "bg-emerald-100 text-emerald-800 border-emerald-200" 
-                                : "bg-gray-100 text-gray-600 border-gray-200"
-                              } font-medium`}
+                            <Badge
+                              variant={
+                                student.status === "present"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className={`${student.status === "present"
+                                  ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                                  : "bg-gray-100 text-gray-600 border-gray-200"
+                                } font-medium`}
                             >
                               {student.status}
                             </Badge>
@@ -961,29 +1176,39 @@ export function AdminDashboard() {
                               <div className="flex gap-1">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      onClick={() => editStudent(student)} 
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => editStudent(student)}
                                       className="h-8 w-8 p-0 text-gray-900 hover:bg-blue-100 hover:text-blue-600 transition-colors rounded-lg"
                                     >
                                       <Edit className="h-4 w-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent><p>Edit Student</p></TooltipContent>
+                                  <TooltipContent>
+                                    <p>Edit Student</p>
+                                  </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      onClick={() => handleDeleteClick(student.id, student.name, 'student')} 
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleDeleteClick(
+                                          student.id,
+                                          student.name,
+                                          "student"
+                                        )
+                                      }
                                       className="h-8 w-8 p-0 text-gray-900 hover:bg-red-100 hover:text-red-600 transition-colors rounded-lg"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent><p>Delete Student</p></TooltipContent>
+                                  <TooltipContent>
+                                    <p>Delete Student</p>
+                                  </TooltipContent>
                                 </Tooltip>
                               </div>
                             </TooltipProvider>
@@ -995,9 +1220,13 @@ export function AdminDashboard() {
                   {filteredStudents.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                       <GraduationCap className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-lg font-medium mb-2">No students found</p>
+                      <p className="text-lg font-medium mb-2">
+                        No students found
+                      </p>
                       <p className="text-sm">
-                        {studentSearchTerm ? "Try adjusting your search criteria." : "Add your first student to get started."}
+                        {studentSearchTerm
+                          ? "Try adjusting your search criteria."
+                          : "Add your first student to get started."}
                       </p>
                     </div>
                   )}
@@ -1009,8 +1238,12 @@ export function AdminDashboard() {
             <TabsContent value="staff" className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Staff Management</h3>
-                  <p className="text-sm text-gray-600 mt-1">Manage staff accounts and information</p>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Staff Management
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Manage staff accounts and information
+                  </p>
                 </div>
                 <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
                   <DialogTrigger asChild>
@@ -1021,59 +1254,100 @@ export function AdminDashboard() {
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                      <DialogTitle className="text-xl font-bold">Add New Staff Member</DialogTitle>
-                      <DialogDescription>Enter the staff member details below.</DialogDescription>
+                      <DialogTitle className="text-xl font-bold">
+                        Add New Staff Member
+                      </DialogTitle>
+                      <DialogDescription>
+                        Enter the staff member details below.
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="staff-name" className="text-sm font-semibold text-gray-700">Name</Label>
-                        <Input 
-                          id="staff-name" 
-                          value={newStaff.name} 
-                          onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })} 
+                        <Label
+                          htmlFor="staff-name"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Name
+                        </Label>
+                        <Input
+                          id="staff-name"
+                          value={newStaff.name}
+                          onChange={(e) =>
+                            setNewStaff({ ...newStaff, name: e.target.value })
+                          }
                           placeholder="Staff name"
                           className="mt-1 text-gray-600"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="staff-email" className="text-sm font-semibold text-gray-700">Email</Label>
-                        <Input 
-                          id="staff-email" 
-                          type="email" 
-                          value={newStaff.email} 
-                          onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })} 
+                        <Label
+                          htmlFor="staff-email"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Email
+                        </Label>
+                        <Input
+                          id="staff-email"
+                          type="email"
+                          value={newStaff.email}
+                          onChange={(e) =>
+                            setNewStaff({ ...newStaff, email: e.target.value })
+                          }
                           placeholder="staff@nascomsoft.com"
                           className="mt-1 text-gray-600"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="staff-position" className="text-sm font-semibold text-gray-700">Position</Label>
-                        <Input 
-                          id="staff-position" 
-                          value={newStaff.position || ""} 
-                          onChange={(e) => setNewStaff({ ...newStaff, position: e.target.value })} 
+                        <Label
+                          htmlFor="staff-position"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Position
+                        </Label>
+                        <Input
+                          id="staff-position"
+                          value={newStaff.position || ""}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              position: e.target.value,
+                            })
+                          }
                           placeholder="Senior Developer"
                           className="mt-1 text-gray-600"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="staff-password" className="text-sm font-semibold text-gray-700">Password</Label>
-                        <Input 
-                          id="staff-password" 
-                          type="password" 
-                          value={newStaff.password} 
-                          onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })} 
+                        <Label
+                          htmlFor="staff-password"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Password
+                        </Label>
+                        <Input
+                          id="staff-password"
+                          type="password"
+                          value={newStaff.password}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              password: e.target.value,
+                            })
+                          }
                           placeholder="Default password"
                           className="mt-1 text-gray-600"
                         />
                       </div>
                     </div>
                     <DialogFooter className="pt-4">
-                      <Button variant="outline" onClick={() => setIsAddStaffOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsAddStaffOpen(false)}
+                      >
                         Cancel
                       </Button>
-                      <Button 
-                        onClick={addStaff} 
+                      <Button
+                        onClick={addStaff}
                         className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
                       >
                         Add Staff
@@ -1082,14 +1356,14 @@ export function AdminDashboard() {
                   </DialogContent>
                 </Dialog>
               </div>
-              
+
               {/* Enhanced Staff Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input 
-                  placeholder="Search staff by name, email, or position..." 
-                  value={staffSearchTerm} 
-                  onChange={(e) => setStaffSearchTerm(e.target.value)} 
+                <Input
+                  placeholder="Search staff by name, email, or position..."
+                  value={staffSearchTerm}
+                  onChange={(e) => setStaffSearchTerm(e.target.value)}
                   className="pl-10 max-w-md bg-white/80 backdrop-blur-sm border-gray-200/50 focus:border-emerald-300 focus:ring-emerald-200/50"
                 />
               </div>
@@ -1099,27 +1373,49 @@ export function AdminDashboard() {
                   <Table>
                     <TableHeader className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-200/50">
                       <TableRow className="border-gray-400/70">
-                        <TableHead className="font-semibold text-gray-700">Name</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Email</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Position</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Actions</TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Name
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Email
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Position
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Status
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredStaff.map((member) => (
-                        <TableRow key={member.id} className="border-gray-300/30 hover:bg-emerald-50/30 transition-colors">
-                          <TableCell className="text-gray-600">{member.name}</TableCell>
-                          <TableCell className="text-gray-600">{member.email}</TableCell>
-                          <TableCell className="text-gray-600">{member.position || "_"}</TableCell>
+                        <TableRow
+                          key={member.id}
+                          className="border-gray-300/30 hover:bg-emerald-50/30 transition-colors"
+                        >
+                          <TableCell className="text-gray-600">
+                            {member.name}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {member.email}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {member.position || "_"}
+                          </TableCell>
                           <TableCell>
-                            <Badge 
-                              variant={member.status === "present" ? "default" : "secondary"} 
-                              className={`${
-                                member.status === "present" 
-                                ? "bg-emerald-100 text-emerald-800 border-emerald-200" 
-                                : "bg-gray-100 text-gray-600 border-gray-200"
-                              } font-medium`}
+                            <Badge
+                              variant={
+                                member.status === "present"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className={`${member.status === "present"
+                                  ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                                  : "bg-gray-100 text-gray-600 border-gray-200"
+                                } font-medium`}
                             >
                               {member.status}
                             </Badge>
@@ -1129,29 +1425,39 @@ export function AdminDashboard() {
                               <div className="flex gap-1">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      onClick={() => editStaff(member)} 
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => editStaff(member)}
                                       className="h-8 w-8 p-0 text-gray-900 hover:bg-emerald-100 hover:text-emerald-600 transition-colors rounded-lg"
                                     >
                                       <Edit className="h-4 w-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent><p>Edit Staff Member</p></TooltipContent>
+                                  <TooltipContent>
+                                    <p>Edit Staff Member</p>
+                                  </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      onClick={() => handleDeleteClick(member.id, member.name, 'staff')} 
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleDeleteClick(
+                                          member.id,
+                                          member.name,
+                                          "staff"
+                                        )
+                                      }
                                       className="h-8 w-8 p-0 text-gray-900 hover:bg-red-100 hover:text-red-600 transition-colors rounded-lg"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent><p>Delete Staff Member</p></TooltipContent>
+                                  <TooltipContent>
+                                    <p>Delete Staff Member</p>
+                                  </TooltipContent>
                                 </Tooltip>
                               </div>
                             </TooltipProvider>
@@ -1163,9 +1469,13 @@ export function AdminDashboard() {
                   {filteredStaff.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                       <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-lg font-medium mb-2">No staff members found</p>
+                      <p className="text-lg font-medium mb-2">
+                        No staff members found
+                      </p>
                       <p className="text-sm">
-                        {staffSearchTerm ? "Try adjusting your search criteria." : "Add your first staff member to get started."}
+                        {staffSearchTerm
+                          ? "Try adjusting your search criteria."
+                          : "Add your first staff member to get started."}
                       </p>
                     </div>
                   )}
@@ -1177,19 +1487,29 @@ export function AdminDashboard() {
             <TabsContent value="attendance" className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Attendance Overview</h3>
-                  <p className="text-sm text-gray-600 mt-1">Track and monitor attendance records</p>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Attendance Overview
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Track and monitor attendance records
+                  </p>
                 </div>
                 <div className="flex gap-3">
-                  <Button 
-                    onClick={exportAttendance} 
-                    variant="outline" 
+                  <Button
+                    onClick={exportAttendance}
+                    variant="outline"
                     className="bg-white/80 backdrop-blur-sm border-gray-200/50 hover:bg-white hover:shadow-md transition-all duration-200"
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Export {filteredAttendance.length > 0 && (attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all") 
-                      ? `Filtered (${filteredAttendance.length})` 
-                      : 'All'} CSV
+                    Export{" "}
+                    {filteredAttendance.length > 0 &&
+                      (attendanceSearchTerm ||
+                        attendanceDateFrom ||
+                        attendanceDateTo ||
+                        filterRole !== "all")
+                      ? `Filtered (${filteredAttendance.length})`
+                      : "All"}{" "}
+                    CSV
                   </Button>
                 </div>
               </div>
@@ -1200,37 +1520,52 @@ export function AdminDashboard() {
                 <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input 
-                      placeholder="Search by name or email..." 
-                      value={attendanceSearchTerm} 
-                      onChange={(e) => setAttendanceSearchTerm(e.target.value)} 
+                    <Input
+                      placeholder="Search by name or email..."
+                      value={attendanceSearchTerm}
+                      onChange={(e) => setAttendanceSearchTerm(e.target.value)}
                       className="pl-10 max-w-md text-gray-600 bg-white/80 backdrop-blur-sm border-gray-200/50 focus:border-purple-300 focus:ring-purple-200/50"
                     />
                   </div>
                   <div className="flex gap-3 items-center">
                     <Filter className="h-4 w-4 text-gray-400" />
-                    <Select value={filterRole} onValueChange={(value: any) => setFilterRole(value)}>
+                    <Select
+                      value={filterRole}
+                      onValueChange={(value: any) => setFilterRole(value)}
+                    >
                       <SelectTrigger className="w-40 text-gray-600 bg-white/80 backdrop-blur-sm border-gray-200/50">
                         <SelectValue placeholder="Filter by role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all" className="text-gray-600">All Roles</SelectItem>
-                        <SelectItem value="staff" className="text-gray-600">Staff</SelectItem>
-                        <SelectItem value="student" className="text-gray-600">Student</SelectItem>
+                        <SelectItem value="all" className="text-gray-600">
+                          All Roles
+                        </SelectItem>
+                        <SelectItem value="staff" className="text-gray-600">
+                          Staff
+                        </SelectItem>
+                        <SelectItem value="student" className="text-gray-600">
+                          Student
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                
+
                 {/* Enhanced Date Search */}
                 <div className="space-y-3">
                   <div className="flex gap-3 items-center">
                     <Calendar className="h-4 w-4 text-purple-500" />
-                    <Label className="text-sm font-semibold text-gray-700">Search by Date:</Label>
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Search by Date:
+                    </Label>
                     <Input
                       type="date"
                       placeholder="Select specific date"
-                      value={attendanceDateFrom === attendanceDateTo ? attendanceDateFrom : ""}
+                      value={
+                        attendanceDateFrom === attendanceDateTo
+                          ? attendanceDateFrom
+                          : ""
+                      }
                       onChange={(e) => {
                         const selectedDate = e.target.value;
                         setAttendanceDateFrom(selectedDate);
@@ -1239,10 +1574,12 @@ export function AdminDashboard() {
                       className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50"
                     />
                   </div>
-                  
+
                   {/* Custom Date Range */}
                   <div className="ml-7 flex flex-wrap items-center gap-3">
-                    <Label className="text-sm text-gray-600">Or select custom range:</Label>
+                    <Label className="text-sm text-gray-600">
+                      Or select custom range:
+                    </Label>
                     <div className="flex gap-2 items-center">
                       <Input
                         type="date"
@@ -1260,45 +1597,45 @@ export function AdminDashboard() {
                         className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50"
                       />
                     </div>
-                    
+
                     {/* Quick Date Range Buttons */}
                     <div className="flex flex-wrap gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setDateRange(1)}
                         className="text-xs bg-white/60 hover:bg-white border-gray-200/50"
                       >
                         Last Month
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setDateRange(3)}
                         className="text-xs bg-white/60 hover:bg-white border-gray-200/50"
                       >
                         Last 3 Months
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setDateRange(6)}
                         className="text-xs bg-white/60 hover:bg-white border-gray-200/50"
                       >
                         Last 6 Months
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setDateRange(12)}
                         className="text-xs bg-white/60 hover:bg-white border-gray-200/50"
                       >
                         Last Year
                       </Button>
                       {(attendanceDateFrom || attendanceDateTo) && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={clearDateRange}
                           className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
@@ -1315,67 +1652,103 @@ export function AdminDashboard() {
                   <Table>
                     <TableHeader className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-200/50">
                       <TableRow className="border-gray-200/50">
-                        <TableHead className="font-semibold text-gray-700">Name</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Role</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Email</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Date</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Check-in</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Check-out</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Name
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Role
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Email
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Date
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Check-in
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Check-out
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          Status
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredAttendance.map((record) => (
-                        <TableRow key={record.id} className="border-gray-200/30 hover:bg-purple-50/30 transition-colors">
-                          <TableCell className="text-gray-600">{record.userName}</TableCell>
+                        <TableRow
+                          key={record.id}
+                          className="border-gray-200/30 hover:bg-purple-50/30 transition-colors"
+                        >
+                          <TableCell className="text-gray-600">
+                            {record.userName}
+                          </TableCell>
                           <TableCell>
-                            <Badge 
-                              variant="outline" 
-                              className={`capitalize ${
-                                record.userRole === 'staff' 
-                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700' 
-                                : 'border-blue-200 bg-blue-50 text-blue-700'
-                              }`}
+                            <Badge
+                              variant="outline"
+                              className={`capitalize ${record.userRole === "staff"
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                  : "border-blue-200 bg-blue-50 text-blue-700"
+                                }`}
                             >
                               {record.userRole}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-gray-600">{record.email}</TableCell>
                           <TableCell className="text-gray-600">
-                            {record.date ? new Date(record.date).toLocaleDateString() : "-"}
+                            {record.email}
+                          </TableCell>
+                          <TableCell className="text-gray-600">
+                            {record.date
+                              ? new Date(record.date).toLocaleDateString()
+                              : "-"}
                           </TableCell>
                           <TableCell className="text-gray-600">
                             {record.checkIn ? (
                               <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                                {new Date(record.checkIn).toLocaleTimeString("en-US", { 
-                                  hour: "2-digit", 
-                                  minute: "2-digit", 
-                                  hour12: true 
-                                })}
+                                {new Date(record.checkIn).toLocaleTimeString(
+                                  "en-US",
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  }
+                                )}
                               </span>
-                            ) : "-"}
+                            ) : (
+                              "-"
+                            )}
                           </TableCell>
                           <TableCell className="text-gray-600">
                             {record.checkOut ? (
                               <span className="inline-flex items-center px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
-                                {new Date(record.checkOut).toLocaleTimeString("en-US", { 
-                                  hour: "2-digit", 
-                                  minute: "2-digit", 
-                                  hour12: true 
-                                })}
+                                {new Date(record.checkOut).toLocaleTimeString(
+                                  "en-US",
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  }
+                                )}
                               </span>
-                            ) : "-"}
+                            ) : (
+                              "-"
+                            )}
                           </TableCell>
                           <TableCell>
-                            <Badge 
-                              variant={record.status === "present" ? "default" : "destructive"} 
-                              className={`${
-                                record.status === "present" 
-                                ? "bg-emerald-100 text-emerald-800 border-emerald-200" 
-                                : "bg-red-100 text-red-800 border-red-200"
-                              } font-medium`}
+                            <Badge
+                              variant={
+                                record.status === "present"
+                                  ? "default"
+                                  : "destructive"
+                              }
+                              className={`${record.status === "present"
+                                  ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                                  : "bg-red-100 text-red-800 border-red-200"
+                                } font-medium`}
                             >
-                              {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                              {record.status.charAt(0).toUpperCase() +
+                                record.status.slice(1)}
                             </Badge>
                           </TableCell>
                         </TableRow>
@@ -1385,12 +1758,16 @@ export function AdminDashboard() {
                   {filteredAttendance.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                       <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-lg font-medium mb-2">No attendance records found</p>
+                      <p className="text-lg font-medium mb-2">
+                        No attendance records found
+                      </p>
                       <p className="text-sm">
-                        {attendanceSearchTerm || attendanceDateFrom || attendanceDateTo || filterRole !== "all" 
-                          ? "Try adjusting your search criteria or date range." 
-                          : "Attendance records will appear here once users check in."
-                        }
+                        {attendanceSearchTerm ||
+                          attendanceDateFrom ||
+                          attendanceDateTo ||
+                          filterRole !== "all"
+                          ? "Try adjusting your search criteria or date range."
+                          : "Attendance records will appear here once users check in."}
                       </p>
                     </div>
                   )}
@@ -1401,26 +1778,36 @@ export function AdminDashboard() {
         </div>
 
         {/* Delete Confirmation Dialog */}
-        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialog
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+        >
           <AlertDialogContent className="sm:max-w-md">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-xl font-bold text-red-600">
-                Delete {deleteTarget?.type === 'staff' ? 'Staff Member' : 'Student'}?
+                Delete{" "}
+                {deleteTarget?.type === "staff" ? "Staff Member" : "Student"}?
               </AlertDialogTitle>
               <AlertDialogDescription className="text-gray-600">
-                You are about to permanently delete <span className="font-semibold">{deleteTarget?.name}</span>. 
-                This action cannot be undone and will remove all associated data.
+                You are about to permanently delete{" "}
+                <span className="font-semibold">{deleteTarget?.name}</span>.
+                This action cannot be undone and will remove all associated
+                data.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={handleDeleteCancel} className="border-gray-300">
+              <AlertDialogCancel
+                onClick={handleDeleteCancel}
+                className="border-gray-300"
+              >
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteConfirm}
                 className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:ring-red-500 text-white"
               >
-                Delete {deleteTarget?.type === 'staff' ? 'Staff Member' : 'Student'}
+                Delete{" "}
+                {deleteTarget?.type === "staff" ? "Staff Member" : "Student"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -1430,48 +1817,85 @@ export function AdminDashboard() {
         <Dialog open={isEditStudentOpen} onOpenChange={setIsEditStudentOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">Edit Student</DialogTitle>
-              <DialogDescription>Update the student details below.</DialogDescription>
+              <DialogTitle className="text-xl font-bold">
+                Edit Student
+              </DialogTitle>
+              <DialogDescription>
+                Update the student details below.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-student-name" className="text-sm font-semibold text-gray-700">Name</Label>
-                <Input 
-                  id="edit-student-name" 
-                  value={editStudentForm.name} 
-                  onChange={(e) => setEditStudentForm({ ...editStudentForm, name: e.target.value })} 
+                <Label
+                  htmlFor="edit-student-name"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Name
+                </Label>
+                <Input
+                  id="edit-student-name"
+                  value={editStudentForm.name}
+                  onChange={(e) =>
+                    setEditStudentForm({
+                      ...editStudentForm,
+                      name: e.target.value,
+                    })
+                  }
                   placeholder="Student name"
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-student-email" className="text-sm font-semibold text-gray-700">Email</Label>
-                <Input 
-                  id="edit-student-email" 
-                  type="email" 
-                  value={editStudentForm.email} 
-                  onChange={(e) => setEditStudentForm({ ...editStudentForm, email: e.target.value })} 
+                <Label
+                  htmlFor="edit-student-email"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Email
+                </Label>
+                <Input
+                  id="edit-student-email"
+                  type="email"
+                  value={editStudentForm.email}
+                  onChange={(e) =>
+                    setEditStudentForm({
+                      ...editStudentForm,
+                      email: e.target.value,
+                    })
+                  }
                   placeholder="student@nascomsoft.com"
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-student-department" className="text-sm font-semibold text-gray-700">Department</Label>
-                <Input 
-                  id="edit-student-department" 
-                  value={editStudentForm.department} 
-                  onChange={(e) => setEditStudentForm({ ...editStudentForm, department: e.target.value })} 
+                <Label
+                  htmlFor="edit-student-department"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Department
+                </Label>
+                <Input
+                  id="edit-student-department"
+                  value={editStudentForm.department}
+                  onChange={(e) =>
+                    setEditStudentForm({
+                      ...editStudentForm,
+                      department: e.target.value,
+                    })
+                  }
                   placeholder="Computer Science"
                   className="mt-1"
                 />
               </div>
             </div>
             <DialogFooter className="pt-4">
-              <Button variant="outline" onClick={() => setIsEditStudentOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditStudentOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button 
-                onClick={updateStudent} 
+              <Button
+                onClick={updateStudent}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
               >
                 Save Changes
@@ -1484,48 +1908,82 @@ export function AdminDashboard() {
         <Dialog open={isEditStaffOpen} onOpenChange={setIsEditStaffOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">Edit Staff Member</DialogTitle>
-              <DialogDescription>Update the staff member details below.</DialogDescription>
+              <DialogTitle className="text-xl font-bold">
+                Edit Staff Member
+              </DialogTitle>
+              <DialogDescription>
+                Update the staff member details below.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-staff-name" className="text-sm font-semibold text-gray-700">Name</Label>
-                <Input 
-                  id="edit-staff-name" 
-                  value={editStaffForm.name} 
-                  onChange={(e) => setEditStaffForm({ ...editStaffForm, name: e.target.value })} 
+                <Label
+                  htmlFor="edit-staff-name"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Name
+                </Label>
+                <Input
+                  id="edit-staff-name"
+                  value={editStaffForm.name}
+                  onChange={(e) =>
+                    setEditStaffForm({ ...editStaffForm, name: e.target.value })
+                  }
                   placeholder="Staff name"
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-staff-email" className="text-sm font-semibold text-gray-700">Email</Label>
-                <Input 
-                  id="edit-staff-email" 
-                  type="email" 
-                  value={editStaffForm.email} 
-                  onChange={(e) => setEditStaffForm({ ...editStaffForm, email: e.target.value })} 
+                <Label
+                  htmlFor="edit-staff-email"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Email
+                </Label>
+                <Input
+                  id="edit-staff-email"
+                  type="email"
+                  value={editStaffForm.email}
+                  onChange={(e) =>
+                    setEditStaffForm({
+                      ...editStaffForm,
+                      email: e.target.value,
+                    })
+                  }
                   placeholder="staff@nascomsoft.com"
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-staff-position" className="text-sm font-semibold text-gray-700">Position</Label>
-                <Input 
-                  id="edit-staff-position" 
-                  value={editStaffForm.position} 
-                  onChange={(e) => setEditStaffForm({ ...editStaffForm, position: e.target.value })} 
+                <Label
+                  htmlFor="edit-staff-position"
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Position
+                </Label>
+                <Input
+                  id="edit-staff-position"
+                  value={editStaffForm.position}
+                  onChange={(e) =>
+                    setEditStaffForm({
+                      ...editStaffForm,
+                      position: e.target.value,
+                    })
+                  }
                   placeholder="Senior Developer"
                   className="mt-1"
                 />
               </div>
             </div>
             <DialogFooter className="pt-4">
-              <Button variant="outline" onClick={() => setIsEditStaffOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditStaffOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button 
-                onClick={updateStaff} 
+              <Button
+                onClick={updateStaff}
                 className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
               >
                 Save Changes
