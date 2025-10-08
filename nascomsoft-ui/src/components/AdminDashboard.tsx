@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo} from "react";
+import { useState, useEffect, useMemo } from "react";
 import { io } from "socket.io-client";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -52,10 +52,16 @@ import {
   Calendar,
   Search,
   Filter,
-  UserCheck,
   TrendingUp,
   FileText,
   Shield,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  ArrowUpRight,
+  Sparkles,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import {
   Tooltip,
@@ -130,6 +136,10 @@ export function AdminDashboard() {
   const [attendanceOverview, setAttendanceOverview] = useState<
     AttendanceRecord[]
   >([]);
+
+  // Password visibility states
+  const [showNewStudentPassword, setShowNewStudentPassword] = useState(false);
+  const [showNewStaffPassword, setShowNewStaffPassword] = useState(false);
 
   // Form states
   const [newStaff, setNewStaff] = useState({
@@ -826,40 +836,39 @@ export function AdminDashboard() {
   ]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
-      {/* Enhanced Header */}
-      <div className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+      {/* Premium Header */}
+      <header className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-sm border-b border-gray-200/60 dark:border-gray-700/50 sticky top-0 z-50 transition-all duration-300">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl">
-                  <Shield className="h-6 w-6 text-white" />
+                <div className="relative group">
+                  <div className="absolute inset-0  rounded-2xl blur-sm opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="relative rounded-2xl group-hover:scale-105 transition-transform duration-300">
+                    <img src="/logo.png" alt="" className="w-14"/>
+                  </div>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 dark:from-gray-100 dark:via-gray-200 dark:to-gray-300 bg-clip-text text-transparent">
                     Admin Dashboard
                   </h1>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Welcome back,{" "}
-                    <span className="font-semibold text-blue-600">
+                    <span className="font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                       {user?.name}
                     </span>
                   </p>
                 </div>
               </div>
             </div>
-            <div className="flex text-gray-600 items-center space-x-3">
+            <div className="flex items-center space-x-2">
               <ThemeToggle />
-              {/* <div className="hidden md:flex items-center space-x-2 px-3 py-2 bg-gray-100/50 rounded-lg">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">{new Date().toLocaleTimeString()}</span>
-              </div> */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={logout}
-                className="flex items-center space-x-2 hover:bg-red-50 hover:text-red-600 transition-colors"
+                className="flex items-center space-x-2 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 rounded-xl"
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden md:inline">Logout</span>
@@ -867,630 +876,152 @@ export function AdminDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Enhanced KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-              <CardTitle className="text-sm font-semibold text-blue-100">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Premium KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Total Students Card */}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white border-0 shadow-2xl hover:shadow-blue-500/30 transition-all duration-500 hover:scale-[1.02] group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-125 transition-transform duration-700"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-8 -translate-x-8 group-hover:scale-110 transition-transform duration-700"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+              <CardTitle className="text-sm font-semibold text-blue-50 tracking-wide uppercase">
                 Total Students
               </CardTitle>
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm group-hover:bg-white/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
                 <GraduationCap className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
-            <CardContent className="relative">
-              <div className="text-3xl font-bold mb-1">{students.length}</div>
-              <p className="text-xs text-blue-100 flex items-center">
-                <UserCheck className="h-3 w-3 mr-1" />
-                {students.filter((s) => s.status === "present").length} present
-                today
-              </p>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-bold mb-2 tracking-tight">{students.length}</div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-blue-50/90 flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {students.filter((s) => s.status === "present").length} present today
+                </p>
+                <ArrowUpRight className="h-4 w-4 text-white/70" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-              <CardTitle className="text-sm font-semibold text-emerald-100">
+          {/* Total Staff Card */}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white border-0 shadow-2xl hover:shadow-emerald-500/30 transition-all duration-500 hover:scale-[1.02] group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-125 transition-transform duration-700"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-8 -translate-x-8 group-hover:scale-110 transition-transform duration-700"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+              <CardTitle className="text-sm font-semibold text-emerald-50 tracking-wide uppercase">
                 Total Staff
               </CardTitle>
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm group-hover:bg-white/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
                 <Users className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
-            <CardContent className="relative">
-              <div className="text-3xl font-bold mb-1">{staff.length}</div>
-              <p className="text-xs text-emerald-100 flex items-center">
-                <UserCheck className="h-3 w-3 mr-1" />
-                {staff.filter((s) => s.status === "present").length} present
-                today
-              </p>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-bold mb-2 tracking-tight">{staff.length}</div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-emerald-50/90 flex items-center gap-1.5">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {staff.filter((s) => s.status === "present").length} present today
+                </p>
+                <ArrowUpRight className="h-4 w-4 text-white/70" />
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-              <CardTitle className="text-sm font-semibold text-purple-100">
+          {/* Today's Check-ins Card */}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600 text-white border-0 shadow-2xl hover:shadow-purple-500/30 transition-all duration-500 hover:scale-[1.02] group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-125 transition-transform duration-700"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-8 -translate-x-8 group-hover:scale-110 transition-transform duration-700"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+              <CardTitle className="text-sm font-semibold text-purple-50 tracking-wide uppercase">
                 Today's Check-ins
               </CardTitle>
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm group-hover:bg-white/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
                 <BarChart3 className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
-            <CardContent className="relative">
-              <div className="text-3xl font-bold mb-1">{todayCheckIns}</div>
-              <p className="text-xs text-purple-100 flex items-center">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                {totalRecords} total records
-              </p>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-bold mb-2 tracking-tight">{todayCheckIns}</div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-purple-50/90 flex items-center gap-1.5">
+                  <TrendingUp className="h-4 w-4" />
+                  {totalRecords} total records
+                </p>
+                <ArrowUpRight className="h-4 w-4 text-white/70" />
+              </div>
             </CardContent>
           </Card>
 
-          {/* <Card className="relative overflow-hidden bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-xl">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-8 translate-x-8"></div>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
-              <CardTitle className="text-sm font-semibold text-orange-100">Active Sessions</CardTitle>
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <Clock className="h-5 w-5 text-white" />
+          {/* Attendance Rate Card */}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600 text-white border-0 shadow-2xl hover:shadow-orange-500/30 transition-all duration-500 hover:scale-[1.02] group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-12 translate-x-12 group-hover:scale-125 transition-transform duration-700"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-8 -translate-x-8 group-hover:scale-110 transition-transform duration-700"></div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 relative z-10">
+              <CardTitle className="text-sm font-semibold text-orange-50 tracking-wide uppercase">
+                Attendance Rate
+              </CardTitle>
+              <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm group-hover:bg-white/30 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6">
+                <Sparkles className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
-            <CardContent className="relative">
-              <div className="text-3xl font-bold mb-1">{todayCheckIns}</div>
-              <p className="text-xs text-orange-100 flex items-center">
-                <Settings className="h-3 w-3 mr-1" />
-                Currently active
-              </p>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-bold mb-2 tracking-tight">
+                {students.length + staff.length > 0
+                  ? Math.round(
+                      (todayCheckIns / (students.length + staff.length)) * 100
+                    )
+                  : 0}
+                %
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-orange-50/90 flex items-center gap-1.5">
+                  <Activity className="h-4 w-4" />
+                  Overall today
+                </p>
+                <ArrowUpRight className="h-4 w-4 text-white/70" />
+              </div>
             </CardContent>
-          </Card> */}
+          </Card>
         </div>
 
-        {/* Enhanced Management Tabs */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50">
-          <Tabs defaultValue="students" className="space-y-6 p-6">
-            <TabsList className="grid w-full grid-cols-3 p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl border border-gray-200/50">
+        {/* Premium Management Tabs */}
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+          <Tabs defaultValue="students" className="space-y-6 p-6 sm:p-8">
+            <TabsList className="grid w-full grid-cols-3 p-1.5 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-inner">
+              <TabsTrigger
+                value="attendance"
+                className="rounded-xl font-semibold text-gray-600 dark:text-gray-400 data-[state=active]:bg-gradient-to-br data-[state=active]:from-white data-[state=active]:to-gray-50 dark:data-[state=active]:from-gray-700 dark:data-[state=active]:to-gray-800 data-[state=active]:shadow-lg data-[state=active]:text-purple-600 dark:data-[state=active]:text-purple-400 transition-all duration-300 hover:scale-[1.02]"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Attendance</span>
+              </TabsTrigger>
               <TabsTrigger
                 value="students"
-                className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-blue-600 transition-all duration-200"
+                className="rounded-xl font-semibold text-gray-600 dark:text-gray-400 data-[state=active]:bg-gradient-to-br data-[state=active]:from-white data-[state=active]:to-gray-50 dark:data-[state=active]:from-gray-700 dark:data-[state=active]:to-gray-800 data-[state=active]:shadow-lg data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 transition-all duration-300 hover:scale-[1.02]"
               >
                 <GraduationCap className="h-4 w-4 mr-2" />
-                Students
+                <span className="hidden sm:inline">Students</span>
               </TabsTrigger>
               <TabsTrigger
                 value="staff"
-                className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-emerald-600 transition-all duration-200"
+                className="rounded-xl font-semibold text-gray-600 dark:text-gray-400 data-[state=active]:bg-gradient-to-br data-[state=active]:from-white data-[state=active]:to-gray-50 dark:data-[state=active]:from-gray-700 dark:data-[state=active]:to-gray-800 data-[state=active]:shadow-lg data-[state=active]:text-emerald-600 dark:data-[state=active]:text-emerald-400 transition-all duration-300 hover:scale-[1.02]"
               >
                 <Users className="h-4 w-4 mr-2" />
-                Staff
+                <span className="hidden sm:inline">Staff</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="attendance"
-                className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-md data-[state=active]:text-purple-600 transition-all duration-200"
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Attendance
-              </TabsTrigger>
+              
             </TabsList>
 
-            {/* Students Management */}
-            <TabsContent value="students" className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Student Management
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Manage student accounts and information
-                  </p>
-                </div>
-                <Dialog
-                  open={isAddStudentOpen}
-                  onOpenChange={setIsAddStudentOpen}
-                >
-                  <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-200">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Student
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle className="text-xl font-bold">
-                        Add New Student
-                      </DialogTitle>
-                      <DialogDescription>
-                        Enter the student details below.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label
-                          htmlFor="student-name"
-                          className="text-sm font-semibold text-gray-700"
-                        >
-                          Name
-                        </Label>
-                        <Input
-                          id="student-name"
-                          value={newStudent.name}
-                          onChange={(e) =>
-                            setNewStudent({
-                              ...newStudent,
-                              name: e.target.value,
-                            })
-                          }
-                          placeholder="Student name"
-                          className="mt-1 text-gray-600"
-                        />
-                      </div>
-                      <div>
-                        <Label
-                          htmlFor="student-email"
-                          className="text-sm font-semibold text-gray-700"
-                        >
-                          Email
-                        </Label>
-                        <Input
-                          id="student-email"
-                          type="email"
-                          value={newStudent.email}
-                          onChange={(e) =>
-                            setNewStudent({
-                              ...newStudent,
-                              email: e.target.value,
-                            })
-                          }
-                          placeholder="student@nascomsoft.com"
-                          className="mt-1 text-gray-600"
-                        />
-                      </div>
-                      <div>
-                        <Label
-                          htmlFor="student-department"
-                          className="text-sm font-semibold text-gray-700"
-                        >
-                          Department
-                        </Label>
-                        <Input
-                          id="student-department"
-                          value={newStudent.department}
-                          onChange={(e) =>
-                            setNewStudent({
-                              ...newStudent,
-                              department: e.target.value,
-                            })
-                          }
-                          placeholder="Computer Science"
-                          className="mt-1 text-gray-600"
-                        />
-                      </div>
-                      <div>
-                        <Label
-                          htmlFor="student-password"
-                          className="text-sm font-semibold text-gray-700"
-                        >
-                          Password
-                        </Label>
-                        <Input
-                          id="student-password"
-                          type="password"
-                          value={newStudent.password}
-                          onChange={(e) =>
-                            setNewStudent({
-                              ...newStudent,
-                              password: e.target.value,
-                            })
-                          }
-                          placeholder="Default password"
-                          className="mt-1 text-gray-600"
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter className="pt-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsAddStudentOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={addStudent}
-                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                      >
-                        Add Student
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              {/* Enhanced Student Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search students by name, email, or department..."
-                  value={studentSearchTerm}
-                  onChange={(e) => setStudentSearchTerm(e.target.value)}
-                  className="pl-10 max-w-md text-gray-600 bg-white/80 backdrop-blur-sm border-gray-200/50 focus:border-blue-300 focus:ring-blue-200/50"
-                />
-              </div>
-
-              <Card className="shadow-xl border-0 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-                <div className="max-h-96 overflow-y-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-400/70">
-                      <TableRow className="border-gray-400/70">
-                        <TableHead className="font-semibold text-gray-700">
-                          Name
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
-                          Email
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
-                          Department
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
-                          Status
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredStudents.map((student) => (
-                        <TableRow
-                          key={student.id}
-                          className="border-gray-300/30 hover:bg-blue-100/30 transition-colors"
-                        >
-                          <TableCell className="font-medium text-gray-600">
-                            {student.name}
-                          </TableCell>
-                          <TableCell className="text-gray-600">
-                            {student.email}
-                          </TableCell>
-                          <TableCell className="text-gray-600">
-                            {student.department}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                student.status === "present"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                              className={`${student.status === "present"
-                                  ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                                  : "bg-gray-100 text-gray-600 border-gray-200"
-                                } font-medium`}
-                            >
-                              {student.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <TooltipProvider>
-                              <div className="flex gap-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => editStudent(student)}
-                                      className="h-8 w-8 p-0 text-gray-900 hover:bg-blue-100 hover:text-blue-600 transition-colors rounded-lg"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Edit Student</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleDeleteClick(
-                                          student.id,
-                                          student.name,
-                                          "student"
-                                        )
-                                      }
-                                      className="h-8 w-8 p-0 text-gray-900 hover:bg-red-100 hover:text-red-600 transition-colors rounded-lg"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Delete Student</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </TooltipProvider>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  {filteredStudents.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <GraduationCap className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-lg font-medium mb-2">
-                        No students found
-                      </p>
-                      <p className="text-sm">
-                        {studentSearchTerm
-                          ? "Try adjusting your search criteria."
-                          : "Add your first student to get started."}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </TabsContent>
-
-            {/* Staff Management */}
-            <TabsContent value="staff" className="space-y-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Staff Management
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Manage staff accounts and information
-                  </p>
-                </div>
-                <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-lg hover:shadow-xl transition-all duration-200">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Staff
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle className="text-xl font-bold">
-                        Add New Staff Member
-                      </DialogTitle>
-                      <DialogDescription>
-                        Enter the staff member details below.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label
-                          htmlFor="staff-name"
-                          className="text-sm font-semibold text-gray-700"
-                        >
-                          Name
-                        </Label>
-                        <Input
-                          id="staff-name"
-                          value={newStaff.name}
-                          onChange={(e) =>
-                            setNewStaff({ ...newStaff, name: e.target.value })
-                          }
-                          placeholder="Staff name"
-                          className="mt-1 text-gray-600"
-                        />
-                      </div>
-                      <div>
-                        <Label
-                          htmlFor="staff-email"
-                          className="text-sm font-semibold text-gray-700"
-                        >
-                          Email
-                        </Label>
-                        <Input
-                          id="staff-email"
-                          type="email"
-                          value={newStaff.email}
-                          onChange={(e) =>
-                            setNewStaff({ ...newStaff, email: e.target.value })
-                          }
-                          placeholder="staff@nascomsoft.com"
-                          className="mt-1 text-gray-600"
-                        />
-                      </div>
-                      <div>
-                        <Label
-                          htmlFor="staff-position"
-                          className="text-sm font-semibold text-gray-700"
-                        >
-                          Position
-                        </Label>
-                        <Input
-                          id="staff-position"
-                          value={newStaff.position || ""}
-                          onChange={(e) =>
-                            setNewStaff({
-                              ...newStaff,
-                              position: e.target.value,
-                            })
-                          }
-                          placeholder="Senior Developer"
-                          className="mt-1 text-gray-600"
-                        />
-                      </div>
-                      <div>
-                        <Label
-                          htmlFor="staff-password"
-                          className="text-sm font-semibold text-gray-700"
-                        >
-                          Password
-                        </Label>
-                        <Input
-                          id="staff-password"
-                          type="password"
-                          value={newStaff.password}
-                          onChange={(e) =>
-                            setNewStaff({
-                              ...newStaff,
-                              password: e.target.value,
-                            })
-                          }
-                          placeholder="Default password"
-                          className="mt-1 text-gray-600"
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter className="pt-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsAddStaffOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={addStaff}
-                        className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
-                      >
-                        Add Staff
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              {/* Enhanced Staff Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search staff by name, email, or position..."
-                  value={staffSearchTerm}
-                  onChange={(e) => setStaffSearchTerm(e.target.value)}
-                  className="pl-10 max-w-md bg-white/80 backdrop-blur-sm border-gray-200/50 focus:border-emerald-300 focus:ring-emerald-200/50"
-                />
-              </div>
-
-              <Card className="shadow-xl border-0 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-                <div className="max-h-96 overflow-y-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-200/50">
-                      <TableRow className="border-gray-400/70">
-                        <TableHead className="font-semibold text-gray-700">
-                          Name
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
-                          Email
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
-                          Position
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
-                          Status
-                        </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
-                          Actions
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredStaff.map((member) => (
-                        <TableRow
-                          key={member.id}
-                          className="border-gray-300/30 hover:bg-emerald-50/30 transition-colors"
-                        >
-                          <TableCell className="text-gray-600">
-                            {member.name}
-                          </TableCell>
-                          <TableCell className="text-gray-600">
-                            {member.email}
-                          </TableCell>
-                          <TableCell className="text-gray-600">
-                            {member.position || "_"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                member.status === "present"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                              className={`${member.status === "present"
-                                  ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                                  : "bg-gray-100 text-gray-600 border-gray-200"
-                                } font-medium`}
-                            >
-                              {member.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <TooltipProvider>
-                              <div className="flex gap-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => editStaff(member)}
-                                      className="h-8 w-8 p-0 text-gray-900 hover:bg-emerald-100 hover:text-emerald-600 transition-colors rounded-lg"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Edit Staff Member</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleDeleteClick(
-                                          member.id,
-                                          member.name,
-                                          "staff"
-                                        )
-                                      }
-                                      className="h-8 w-8 p-0 text-gray-900 hover:bg-red-100 hover:text-red-600 transition-colors rounded-lg"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Delete Staff Member</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </div>
-                            </TooltipProvider>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  {filteredStaff.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-lg font-medium mb-2">
-                        No staff members found
-                      </p>
-                      <p className="text-sm">
-                        {staffSearchTerm
-                          ? "Try adjusting your search criteria."
-                          : "Add your first staff member to get started."}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </TabsContent>
-
             {/* Attendance Overview */}
-            <TabsContent value="attendance" className="space-y-6">
+            <TabsContent value="attendance" className="space-y-6 animate-in fade-in-50 duration-500">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
                     Attendance Overview
                   </h3>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-purple-500" />
                     Track and monitor attendance records
                   </p>
                 </div>
@@ -1498,7 +1029,7 @@ export function AdminDashboard() {
                   <Button
                     onClick={exportAttendance}
                     variant="outline"
-                    className="bg-white/80 backdrop-blur-sm border-gray-200/50 hover:bg-white hover:shadow-md transition-all duration-200"
+                    className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/60 hover:bg-white dark:text-gray-300 dark:hover:bg-slate-700 hover:shadow-lg hover:scale-105 transition-all duration-300 rounded-xl"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export{" "}
@@ -1514,37 +1045,40 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Enhanced Attendance Search and Filters */}
-              <div className="space-y-4 bg-white/60 backdrop-blur-sm p-6 rounded-2xl border border-white/50">
+              {/* Premium Attendance Search and Filters */}
+              <div className="space-y-4 bg-gradient-to-br from-white/90 to-gray-50/90 dark:from-slate-800/90 dark:to-slate-900/90 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-gray-200/60 dark:border-gray-700/60 shadow-xl">
                 {/* Name/Email Search and Role Filter */}
                 <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <div className="flex-1 relative group">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-purple-500 transition-colors duration-200" />
                     <Input
                       placeholder="Search by name or email..."
                       value={attendanceSearchTerm}
                       onChange={(e) => setAttendanceSearchTerm(e.target.value)}
-                      className="pl-10 max-w-md text-gray-600 bg-white/80 backdrop-blur-sm border-gray-200/50 focus:border-purple-300 focus:ring-purple-200/50"
+                      className="pl-12 pr-4 py-6 max-w-2xl text-gray-700 dark:text-gray-300 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/60 focus:border-purple-400 dark:focus:border-purple-500 focus:ring-2 focus:ring-purple-200/50 dark:focus:ring-purple-500/30 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
                     />
                   </div>
                   <div className="flex gap-3 items-center">
-                    <Filter className="h-4 w-4 text-gray-400" />
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-xl">
+                      <Filter className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">Filter</span>
+                    </div>
                     <Select
                       value={filterRole}
                       onValueChange={(value: any) => setFilterRole(value)}
                     >
-                      <SelectTrigger className="w-40 text-gray-600 bg-white/80 backdrop-blur-sm border-gray-200/50">
+                      <SelectTrigger className="w-44 text-gray-700 dark:text-gray-300 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-200">
                         <SelectValue placeholder="Filter by role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all" className="text-gray-600">
+                        <SelectItem value="all" className="text-gray-700 dark:text-gray-300">
                           All Roles
                         </SelectItem>
-                        <SelectItem value="staff" className="text-gray-600">
-                          Staff
+                        <SelectItem value="staff" className="text-gray-700 dark:text-gray-300">
+                          Staff Only
                         </SelectItem>
-                        <SelectItem value="student" className="text-gray-600">
-                          Student
+                        <SelectItem value="student" className="text-gray-700 dark:text-gray-300">
+                          Students Only
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -1555,7 +1089,7 @@ export function AdminDashboard() {
                 <div className="space-y-3">
                   <div className="flex gap-3 items-center">
                     <Calendar className="h-4 w-4 text-purple-500" />
-                    <Label className="text-sm font-semibold text-gray-700">
+                    <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Search by Date:
                     </Label>
                     <Input
@@ -1571,13 +1105,13 @@ export function AdminDashboard() {
                         setAttendanceDateFrom(selectedDate);
                         setAttendanceDateTo(selectedDate);
                       }}
-                      className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50"
+                      className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50 dark:text-gray-800"
                     />
                   </div>
 
                   {/* Custom Date Range */}
                   <div className="ml-7 flex flex-wrap items-center gap-3">
-                    <Label className="text-sm text-gray-600">
+                    <Label className="text-sm text-gray-600 dark:text-gray-300">
                       Or select custom range:
                     </Label>
                     <div className="flex gap-2 items-center">
@@ -1586,15 +1120,15 @@ export function AdminDashboard() {
                         placeholder="From date"
                         value={attendanceDateFrom}
                         onChange={(e) => setAttendanceDateFrom(e.target.value)}
-                        className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50"
+                        className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50 dark:text-gray-800"
                       />
-                      <span className="text-sm text-gray-500">to</span>
+                      <span className="text-sm text-gray-500 dark:text-gray-300">to</span>
                       <Input
                         type="date"
                         placeholder="To date"
                         value={attendanceDateTo}
                         onChange={(e) => setAttendanceDateTo(e.target.value)}
-                        className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50"
+                        className="w-44 text-gray-600 font-semibold bg-white/80 backdrop-blur-sm border-gray-200/50 dark:text-gray-800"
                       />
                     </div>
 
@@ -1647,65 +1181,81 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              <Card className="shadow-xl border-0 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm">
-                <div className="max-h-96 overflow-y-auto">
+              <Card className="shadow-2xl border-0 rounded-2xl overflow-hidden bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm">
+                <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
                   <Table>
-                    <TableHeader className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-200/50">
-                      <TableRow className="border-gray-200/50">
-                        <TableHead className="font-semibold text-gray-700">
+                    <TableHeader className="sticky top-0 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 backdrop-blur-xl z-10 border-b border-gray-200/70 dark:border-gray-700/70 shadow-sm">
+                      <TableRow className="border-gray-200/70 dark:border-gray-700/70 hover:bg-transparent">
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
                           Name
                         </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
                           Role
                         </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
                           Email
                         </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
                           Date
                         </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
                           Check-in
                         </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
                           Check-out
                         </TableHead>
-                        <TableHead className="font-semibold text-gray-700">
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
                           Status
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredAttendance.map((record) => (
+                      {filteredAttendance.map((record, idx) => (
                         <TableRow
                           key={record.id}
-                          className="border-gray-200/30 hover:bg-purple-50/30 transition-colors"
+                          className="border-gray-200/40 dark:border-gray-700/40 hover:bg-gradient-to-r hover:from-purple-50/50 hover:to-violet-50/30 dark:hover:from-purple-900/20 dark:hover:to-violet-900/10 transition-all duration-200"
+                          style={{ animationDelay: `${idx * 30}ms` }}
                         >
-                          <TableCell className="text-gray-600">
-                            {record.userName}
+                          <TableCell className="font-semibold text-gray-900 dark:text-gray-100">
+                            <div className="flex items-center gap-2">
+                              <div className={`h-8 w-8 rounded-full ${
+                                record.userRole === "staff"
+                                  ? "bg-gradient-to-br from-emerald-500 to-teal-500"
+                                  : "bg-gradient-to-br from-blue-500 to-indigo-500"
+                              } flex items-center justify-center text-white text-sm font-bold shadow-md`}>
+                                {record.userName.charAt(0).toUpperCase()}
+                              </div>
+                              {record.userName}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge
                               variant="outline"
-                              className={`capitalize ${record.userRole === "staff"
-                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                  : "border-blue-200 bg-blue-50 text-blue-700"
-                                }`}
+                              className={`capitalize font-semibold shadow-sm ${
+                                record.userRole === "staff"
+                                  ? "border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+                                  : "border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                              }`}
                             >
                               {record.userRole}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-gray-600 dark:text-gray-400">
                             {record.email}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-gray-600 dark:text-gray-400 font-medium">
                             {record.date
-                              ? new Date(record.date).toLocaleDateString()
-                              : "-"}
+                              ? new Date(record.date).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
+                              : "—"}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-gray-600 dark:text-gray-400">
                             {record.checkIn ? (
-                              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-800 dark:text-green-300 text-xs font-bold rounded-lg shadow-sm border border-green-200 dark:border-green-700">
+                                <Activity className="h-3 w-3" />
                                 {new Date(record.checkIn).toLocaleTimeString(
                                   "en-US",
                                   {
@@ -1716,12 +1266,13 @@ export function AdminDashboard() {
                                 )}
                               </span>
                             ) : (
-                              "-"
+                              <span className="text-gray-400 dark:text-gray-600">—</span>
                             )}
                           </TableCell>
-                          <TableCell className="text-gray-600">
+                          <TableCell className="text-gray-600 dark:text-gray-400">
                             {record.checkOut ? (
-                              <span className="inline-flex items-center px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 text-orange-800 dark:text-orange-300 text-xs font-bold rounded-lg shadow-sm border border-orange-200 dark:border-orange-700">
+                                <Activity className="h-3 w-3" />
                                 {new Date(record.checkOut).toLocaleTimeString(
                                   "en-US",
                                   {
@@ -1732,7 +1283,7 @@ export function AdminDashboard() {
                                 )}
                               </span>
                             ) : (
-                              "-"
+                              <span className="text-gray-400 dark:text-gray-600">—</span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -1742,11 +1293,17 @@ export function AdminDashboard() {
                                   ? "default"
                                   : "destructive"
                               }
-                              className={`${record.status === "present"
-                                  ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                                  : "bg-red-100 text-red-800 border-red-200"
-                                } font-medium`}
+                              className={`${
+                                record.status === "present"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700"
+                                  : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-700"
+                              } font-semibold px-3 py-1 shadow-sm`}
                             >
+                              {record.status === "present" ? (
+                                <CheckCircle2 className="h-3 w-3 mr-1 inline" />
+                              ) : (
+                                <XCircle className="h-3 w-3 mr-1 inline" />
+                              )}
                               {record.status.charAt(0).toUpperCase() +
                                 record.status.slice(1)}
                             </Badge>
@@ -1756,17 +1313,19 @@ export function AdminDashboard() {
                     </TableBody>
                   </Table>
                   {filteredAttendance.length === 0 && (
-                    <div className="text-center py-12 text-gray-500">
-                      <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-lg font-medium mb-2">
+                    <div className="text-center py-20 text-gray-500 dark:text-gray-400">
+                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-violet-100 dark:from-purple-900/30 dark:to-violet-900/30 mb-6">
+                        <FileText className="h-10 w-10 text-purple-500 dark:text-purple-400" />
+                      </div>
+                      <p className="text-xl font-bold mb-2 text-gray-700 dark:text-gray-300">
                         No attendance records found
                       </p>
-                      <p className="text-sm">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                         {attendanceSearchTerm ||
                           attendanceDateFrom ||
                           attendanceDateTo ||
                           filterRole !== "all"
-                          ? "Try adjusting your search criteria or date range."
+                          ? "Try adjusting your search criteria or date range to find records."
                           : "Attendance records will appear here once users check in."}
                       </p>
                     </div>
@@ -1774,6 +1333,579 @@ export function AdminDashboard() {
                 </div>
               </Card>
             </TabsContent>
+
+            {/* Students Management */}
+            <TabsContent value="students" className="space-y-6 animate-in fade-in-50 duration-500">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
+                    Student Management
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-blue-500" />
+                    Manage student accounts and information
+                  </p>
+                </div>
+                <Dialog
+                  open={isAddStudentOpen}
+                  onOpenChange={setIsAddStudentOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button className="bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 hover:from-blue-700 hover:via-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 rounded-xl">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Student
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-bold text-gray-800">
+                        Add New Student
+                      </DialogTitle>
+                      <DialogDescription className="text-sm text-gray-600">
+                        Enter the student details below.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label
+                          htmlFor="student-name"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Name
+                        </Label>
+                        <Input
+                          id="student-name"
+                          value={newStudent.name}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              name: e.target.value,
+                            })
+                          }
+                          placeholder="Student name"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="student-email"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Email
+                        </Label>
+                        <Input
+                          id="student-email"
+                          type="email"
+                          value={newStudent.email}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              email: e.target.value,
+                            })
+                          }
+                          placeholder="student@nascomsoft.com"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="student-department"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Department
+                        </Label>
+                        <Input
+                          id="student-department"
+                          value={newStudent.department}
+                          onChange={(e) =>
+                            setNewStudent({
+                              ...newStudent,
+                              department: e.target.value,
+                            })
+                          }
+                          placeholder="Computer Science"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="student-password"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Password
+                        </Label>
+                        <div className="relative mt-1">
+                          <Input
+                            id="student-password"
+                            type={showNewStudentPassword ? "text" : "password"}
+                            value={newStudent.password}
+                            onChange={(e) =>
+                              setNewStudent({
+                                ...newStudent,
+                                password: e.target.value,
+                              })
+                            }
+                            placeholder="Default password"
+                            className="pr-10"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowNewStudentPassword(!showNewStudentPassword)}
+                          >
+                            {showNewStudentPassword ? (
+                              <EyeOff className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-gray-500" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter className="pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsAddStudentOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={addStudent}
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                      >
+                        Add Student
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {/* Premium Student Search */}
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200" />
+                <Input
+                  placeholder="Search students by name, email, or department..."
+                  value={studentSearchTerm}
+                  onChange={(e) => setStudentSearchTerm(e.target.value)}
+                  className="pl-12 pr-4 py-6 max-w-2xl text-gray-700 dark:text-gray-300 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/60 focus:border-blue-400 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-200/50 dark:focus:ring-blue-500/30 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                />
+              </div>
+
+              <Card className="shadow-2xl border-0 rounded-2xl overflow-hidden bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm">
+                <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 backdrop-blur-xl z-10 border-b border-gray-200/70 dark:border-gray-700/70 shadow-sm">
+                      <TableRow className="border-gray-200/70 dark:border-gray-700/70 hover:bg-transparent">
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
+                          Name
+                        </TableHead>
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
+                          Email
+                        </TableHead>
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
+                          Department
+                        </TableHead>
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
+                          Status
+                        </TableHead>
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStudents.map((student, idx) => (
+                        <TableRow
+                          key={student.id}
+                          className="border-gray-200/40 dark:border-gray-700/40 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/30 dark:hover:from-blue-900/20 dark:hover:to-indigo-900/10 transition-all duration-200 group"
+                          style={{ animationDelay: `${idx * 50}ms` }}
+                        >
+                          <TableCell className="font-semibold text-gray-900 dark:text-gray-100">
+                            <div className="flex items-center gap-2">
+                              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
+                                {student.name.charAt(0).toUpperCase()}
+                              </div>
+                              {student.name}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-gray-600 dark:text-gray-400">
+                            {student.email}
+                          </TableCell>
+                          <TableCell className="text-gray-600 dark:text-gray-400">
+                            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 font-medium">
+                              {student.department}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                student.status === "present"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className={`${
+                                student.status === "present"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700"
+                                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600"
+                              } font-semibold px-3 py-1 shadow-sm`}
+                            >
+                              {student.status === "present" ? (
+                                <CheckCircle2 className="h-3 w-3 mr-1 inline" />
+                              ) : (
+                                <XCircle className="h-3 w-3 mr-1 inline" />
+                              )}
+                              {student.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <div className="flex gap-2">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => editStudent(student)}
+                                      className="h-9 w-9 p-0 text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 rounded-xl hover:scale-110"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-0">
+                                    <p className="font-medium">Edit Student</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleDeleteClick(
+                                          student.id,
+                                          student.name,
+                                          "student"
+                                        )
+                                      }
+                                      className="h-9 w-9 p-0 text-gray-700 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 rounded-xl hover:scale-110"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="bg-gradient-to-r from-red-600 to-rose-600 text-white border-0">
+                                    <p className="font-medium">Delete Student</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </TooltipProvider>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {filteredStudents.length === 0 && (
+                    <div className="text-center py-20 text-gray-500 dark:text-gray-400">
+                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 mb-6">
+                        <GraduationCap className="h-10 w-10 text-blue-500 dark:text-blue-400" />
+                      </div>
+                      <p className="text-xl font-bold mb-2 text-gray-700 dark:text-gray-300">
+                        No students found
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {studentSearchTerm
+                          ? "Try adjusting your search criteria."
+                          : "Add your first student to get started."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </TabsContent>
+
+            {/* Staff Management */}
+            <TabsContent value="staff" className="space-y-6 animate-in fade-in-50 duration-500">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
+                    Staff Management
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-emerald-500" />
+                    Manage staff accounts and information
+                  </p>
+                </div>
+                <Dialog open={isAddStaffOpen} onOpenChange={setIsAddStaffOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-gradient-to-r from-emerald-600 via-emerald-600 to-teal-600 hover:from-emerald-700 hover:via-emerald-700 hover:to-teal-700 text-white shadow-lg hover:shadow-emerald-500/50 transition-all duration-300 hover:scale-105 rounded-xl">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Staff
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-bold text-gray-800">
+                        Add New Staff Member
+                      </DialogTitle>
+                      <DialogDescription className="text-sm text-gray-600">
+                        Enter the staff member details below.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label
+                          htmlFor="staff-name"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Name
+                        </Label>
+                        <Input
+                          id="staff-name"
+                          value={newStaff.name}
+                          onChange={(e) =>
+                            setNewStaff({ ...newStaff, name: e.target.value })
+                          }
+                          placeholder="Staff name"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="staff-email"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Email
+                        </Label>
+                        <Input
+                          id="staff-email"
+                          type="email"
+                          value={newStaff.email}
+                          onChange={(e) =>
+                            setNewStaff({ ...newStaff, email: e.target.value })
+                          }
+                          placeholder="staff@nascomsoft.com"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="staff-position"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Position
+                        </Label>
+                        <Input
+                          id="staff-position"
+                          value={newStaff.position || ""}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              position: e.target.value,
+                            })
+                          }
+                          placeholder="Senior Developer"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="staff-password"
+                          className="text-sm font-semibold text-gray-700"
+                        >
+                          Password
+                        </Label>
+                        <div className="relative mt-1">
+                          <Input
+                            id="staff-password"
+                            type={showNewStaffPassword ? "text" : "password"}
+                            value={newStaff.password}
+                            onChange={(e) =>
+                              setNewStaff({
+                                ...newStaff,
+                                password: e.target.value,
+                              })
+                            }
+                            placeholder="Default password"
+                            className="pr-10"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                            onClick={() => setShowNewStaffPassword(!showNewStaffPassword)}
+                          >
+                            {showNewStaffPassword ? (
+                              <EyeOff className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-gray-500" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter className="pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsAddStaffOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={addStaff}
+                        className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
+                      >
+                        Add Staff
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {/* Premium Staff Search */}
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors duration-200" />
+                <Input
+                  placeholder="Search staff by name, email, or position..."
+                  value={staffSearchTerm}
+                  onChange={(e) => setStaffSearchTerm(e.target.value)}
+                  className="pl-12 pr-4 py-6 max-w-2xl text-gray-700 dark:text-gray-300 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/60 focus:border-emerald-400 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200/50 dark:focus:ring-emerald-500/30 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+                />
+              </div>
+
+              <Card className="shadow-2xl border-0 rounded-2xl overflow-hidden bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm">
+                <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 backdrop-blur-xl z-10 border-b border-gray-200/70 dark:border-gray-700/70 shadow-sm">
+                      <TableRow className="border-gray-200/70 dark:border-gray-700/70 hover:bg-transparent">
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
+                          Name
+                        </TableHead>
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
+                          Email
+                        </TableHead>
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
+                          Position
+                        </TableHead>
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
+                          Status
+                        </TableHead>
+                        <TableHead className="font-bold text-gray-800 dark:text-gray-200 tracking-wide uppercase text-xs">
+                          Actions
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredStaff.map((member, idx) => (
+                        <TableRow
+                          key={member.id}
+                          className="border-gray-200/40 dark:border-gray-700/40 hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-teal-50/30 dark:hover:from-emerald-900/20 dark:hover:to-teal-900/10 transition-all duration-200 group"
+                          style={{ animationDelay: `${idx * 50}ms` }}
+                        >
+                          <TableCell className="font-semibold text-gray-900 dark:text-gray-100">
+                            <div className="flex items-center gap-2">
+                              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+                              {member.name}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-gray-600 dark:text-gray-400">
+                            {member.email}
+                          </TableCell>
+                          <TableCell className="text-gray-600 dark:text-gray-400">
+                            <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700 font-medium">
+                              {member.position || "—"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                member.status === "present"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                              className={`${
+                                member.status === "present"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700"
+                                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600"
+                              } font-semibold px-3 py-1 shadow-sm`}
+                            >
+                              {member.status === "present" ? (
+                                <CheckCircle2 className="h-3 w-3 mr-1 inline" />
+                              ) : (
+                                <XCircle className="h-3 w-3 mr-1 inline" />
+                              )}
+                              {member.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <div className="flex gap-2">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => editStaff(member)}
+                                      className="h-9 w-9 p-0 text-gray-700 dark:text-gray-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-200 rounded-xl hover:scale-110"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-0">
+                                    <p className="font-medium">Edit Staff Member</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleDeleteClick(
+                                          member.id,
+                                          member.name,
+                                          "staff"
+                                        )
+                                      }
+                                      className="h-9 w-9 p-0 text-gray-700 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 rounded-xl hover:scale-110"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="bg-gradient-to-r from-red-600 to-rose-600 text-white border-0">
+                                    <p className="font-medium">Delete Staff Member</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </TooltipProvider>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {filteredStaff.length === 0 && (
+                    <div className="text-center py-20 text-gray-500 dark:text-gray-400">
+                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 mb-6">
+                        <Users className="h-10 w-10 text-emerald-500 dark:text-emerald-400" />
+                      </div>
+                      <p className="text-xl font-bold mb-2 text-gray-700 dark:text-gray-300">
+                        No staff members found
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {staffSearchTerm
+                          ? "Try adjusting your search criteria."
+                          : "Add your first staff member to get started."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </TabsContent>
+
+            
           </Tabs>
         </div>
 
@@ -1788,9 +1920,9 @@ export function AdminDashboard() {
                 Delete{" "}
                 {deleteTarget?.type === "staff" ? "Staff Member" : "Student"}?
               </AlertDialogTitle>
-              <AlertDialogDescription className="text-gray-600">
+              <AlertDialogDescription className="text-sm text-gray-600">
                 You are about to permanently delete{" "}
-                <span className="font-semibold">{deleteTarget?.name}</span>.
+                <span className="font-semibold text-gray-900">{deleteTarget?.name}</span>.
                 This action cannot be undone and will remove all associated
                 data.
               </AlertDialogDescription>
@@ -1817,10 +1949,10 @@ export function AdminDashboard() {
         <Dialog open={isEditStudentOpen} onOpenChange={setIsEditStudentOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">
+              <DialogTitle className="text-xl font-bold text-gray-800">
                 Edit Student
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-sm text-gray-600">
                 Update the student details below.
               </DialogDescription>
             </DialogHeader>
@@ -1842,7 +1974,7 @@ export function AdminDashboard() {
                     })
                   }
                   placeholder="Student name"
-                  className="mt-1"
+                  className="mt-1 border-gray-300"
                 />
               </div>
               <div>
@@ -1863,7 +1995,7 @@ export function AdminDashboard() {
                     })
                   }
                   placeholder="student@nascomsoft.com"
-                  className="mt-1"
+                  className="mt-1 border-gray-300"
                 />
               </div>
               <div>
@@ -1883,7 +2015,7 @@ export function AdminDashboard() {
                     })
                   }
                   placeholder="Computer Science"
-                  className="mt-1"
+                  className="mt-1 border-gray-300"
                 />
               </div>
             </div>
@@ -1908,10 +2040,10 @@ export function AdminDashboard() {
         <Dialog open={isEditStaffOpen} onOpenChange={setIsEditStaffOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">
+              <DialogTitle className="text-xl font-bold text-gray-800">
                 Edit Staff Member
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-sm text-gray-600">
                 Update the staff member details below.
               </DialogDescription>
             </DialogHeader>
@@ -1930,7 +2062,7 @@ export function AdminDashboard() {
                     setEditStaffForm({ ...editStaffForm, name: e.target.value })
                   }
                   placeholder="Staff name"
-                  className="mt-1"
+                  className="mt-1 border-gray-300"
                 />
               </div>
               <div>
@@ -1951,7 +2083,7 @@ export function AdminDashboard() {
                     })
                   }
                   placeholder="staff@nascomsoft.com"
-                  className="mt-1"
+                  className="mt-1 border-gray-300"
                 />
               </div>
               <div>
@@ -1971,7 +2103,7 @@ export function AdminDashboard() {
                     })
                   }
                   placeholder="Senior Developer"
-                  className="mt-1"
+                  className="mt-1 border-gray-300"
                 />
               </div>
             </div>
@@ -1991,7 +2123,7 @@ export function AdminDashboard() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </main>
     </div>
   );
 }
