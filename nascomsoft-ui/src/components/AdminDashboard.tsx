@@ -1253,7 +1253,7 @@ export function AdminDashboard() {
                               : "—"}
                           </TableCell>
                           <TableCell className="text-gray-600 dark:text-gray-400">
-                            {record.checkIn ? (
+                            {record.checkIn && !isNaN(new Date(record.checkIn).getTime()) ? (
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 text-green-800 dark:text-green-300 text-xs font-bold rounded-lg shadow-sm border border-green-200 dark:border-green-700">
                                 <Activity className="h-3 w-3" />
                                 {new Date(record.checkIn).toLocaleTimeString(
@@ -1270,7 +1270,7 @@ export function AdminDashboard() {
                             )}
                           </TableCell>
                           <TableCell className="text-gray-600 dark:text-gray-400">
-                            {record.checkOut ? (
+                            {record.checkOut && !isNaN(new Date(record.checkOut).getTime()) ? (
                               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 text-orange-800 dark:text-orange-300 text-xs font-bold rounded-lg shadow-sm border border-orange-200 dark:border-orange-700">
                                 <Activity className="h-3 w-3" />
                                 {new Date(record.checkOut).toLocaleTimeString(
@@ -1283,7 +1283,7 @@ export function AdminDashboard() {
                                 )}
                               </span>
                             ) : (
-                              <span className="text-gray-400 dark:text-gray-600">—</span>
+                              <span className="text-gray-400 dark:text-gray-600 text-center">—</span>
                             )}
                           </TableCell>
                           <TableCell>
