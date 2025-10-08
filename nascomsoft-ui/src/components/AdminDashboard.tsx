@@ -987,7 +987,7 @@ export function AdminDashboard() {
 
         {/* Premium Management Tabs */}
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-          <Tabs defaultValue="students" className="space-y-6 p-6 sm:p-8">
+          <Tabs defaultValue="attendance" className="space-y-6 p-6 sm:p-8">
             <TabsList className="grid w-full grid-cols-3 p-1.5 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 shadow-inner">
               <TabsTrigger
                 value="attendance"
