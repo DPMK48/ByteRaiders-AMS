@@ -4,7 +4,7 @@ import { ThemeProvider } from './components/ThemeProvider';
 import { AuthProvider, useAuth } from './components/AuthProvider';
 import { Login } from './components/Login';
 import { QRScanner } from './components/QRScanner';
-import { AdminDashboard } from './components/AdminDashboard';
+import { AdminDashboard } from './components/AdminDashboardRefactored';
 import { Toaster } from './components/ui/sonner';
 import type React from "react";
 
